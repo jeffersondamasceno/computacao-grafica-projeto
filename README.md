@@ -44,13 +44,21 @@ A melhor abordagem é **Web + JavaScript**, pois:
 ## 📌 Estrutura Sugerida do Projeto
 
 /project
+
 │── index.html → área de desenho (Canvas ou Three.js) + painel lateral com controles
+
 │── style.css → estilização
+
 │── main.js → lógica principal, integração da interface com os algoritmos
+
 │── /algorithms → arquivos JS separados por algoritmo
+
 ├── bresenham.js
+
 ├── midpointCircle.js
+
 ├── bezier.js
+
 ├── ...
 
 
