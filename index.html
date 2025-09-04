@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Computação Gráfica - Protótipo Interativo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-palette"></i> Computação Gráfica
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#"><i class="bi bi-house"></i> Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><i class="bi bi-info-circle"></i> Sobre</a>
+                    </li>
+                </ul>
+                <div class="navbar-nav">
+                    <button class="btn btn-outline-light btn-sm me-2" id="clearCanvas">
+                        <i class="bi bi-trash"></i> Limpar
+                    </button>
+                    <button class="btn btn-outline-light btn-sm" id="toggleGrid">
+                        <i class="bi bi-grid"></i> Malha
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Painel de Controles -->
+            <div class="col-md-3 col-lg-2 sidebar">
+                <div class="sticky-top pt-3">
+                    <h5 class="sidebar-title">Algoritmos</h5>
+                    
+                    <!-- Algoritmos de Rasterização -->
+                    <div class="accordion" id="algorithmsAccordion">
+                        <!-- Bresenham (Linhas) -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#bresenhamCollapse">
+                                    <i class="bi bi-slash"></i> Bresenham (Linhas)
+                                </button>
+                            </h2>
+                            <div id="bresenhamCollapse" class="accordion-collapse collapse show" data-bs-parent="#algorithmsAccordion">
+                                <div class="accordion-body">
+                                    <div class="mb-2">
+                                        <label class="form-label">Ponto Inicial (x1, y1)</label>
+                                        <div class="row g-2">
+                                            <div class="col-6">
+                                                <input type="number" class="form-control form-control-sm" id="x1" value="50" placeholder="x1">
+                                            </div>
+                                            <div class="col-6">
+                                                <input type="number" class="form-control form-control-sm" id="y1" value="50" placeholder="y1">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Ponto Final (x2, y2)</label>
+                                        <div class="row g-2">
+                                            <div class="col-6">
+                                                <input type="number" class="form-control form-control-sm" id="x2" value="200" placeholder="x2">
+                                            </div>
+                                            <div class="col-6">
+                                                <input type="number" class="form-control form-control-sm" id="y2" value="150" placeholder="y2">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-primary btn-sm w-100" id="drawLine">
+                                        <i class="bi bi-pencil"></i> Desenhar Linha
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Círculos -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#circleCollapse">
+                                    <i class="bi bi-circle"></i> Círculos
+                                </button>
+                            </h2>
+                            <div id="circleCollapse" class="accordion-collapse collapse" data-bs-parent="#algorithmsAccordion">
+                                <div class="accordion-body">
+                                    <div class="mb-2">
+                                        <label class="form-label">Centro (x, y)</label>
+                                        <div class="row g-2">
+                                            <div class="col-6">
+                                                <input type="number" class="form-control form-control-sm" id="circleX" value="150" placeholder="x">
+                                            </div>
+                                            <div class="col-6">
+                                                <input type="number" class="form-control form-control-sm" id="circleY" value="150" placeholder="y">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Raio</label>
+                                        <input type="number" class="form-control form-control-sm" id="circleRadius" value="50" placeholder="Raio">
+                                    </div>
+                                    <button class="btn btn-primary btn-sm w-100" id="drawCircle">
+                                        <i class="bi bi-pencil"></i> Desenhar Círculo
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Elipse -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#ellipseCollapse">
+                                    <i class="bi bi-egg"></i> Elipse
+                                </button>
+                            </h2>
+                            <div id="ellipseCollapse" class="accordion-collapse collapse" data-bs-parent="#algorithmsAccordion">
+                                <div class="accordion-body">
+                                    <div class="mb-2">
+                                        <label class="form-label">Centro (x, y)</label>
+                                        <div class="row g-2">
+                                            <div class="col-6">
+                                                <input type="number" class="form-control form-control-sm" id="ellipseX" value="150" placeholder="x">
+                                            </div>
+                                            <div class="col-6">
+                                                <input type="number" class="form-control form-control-sm" id="ellipseY" value="150" placeholder="y">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Semi-eixos (a, b)</label>
+                                        <div class="row g-2">
+                                            <div class="col-6">
+                                                <input type="number" class="form-control form-control-sm" id="ellipseA" value="60" placeholder="a">
+                                            </div>
+                                            <div class="col-6">
+                                                <input type="number" class="form-control form-control-sm" id="ellipseB" value="40" placeholder="b">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-primary btn-sm w-100" id="drawEllipse">
+                                        <i class="bi bi-pencil"></i> Desenhar Elipse
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Curvas de Bézier -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#bezierCollapse">
+                                    <i class="bi bi-bezier2"></i> Curvas de Bézier
+                                </button>
+                            </h2>
+                            <div id="bezierCollapse" class="accordion-collapse collapse" data-bs-parent="#algorithmsAccordion">
+                                <div class="accordion-body">
+                                    <div class="mb-2">
+                                        <label class="form-label">Pontos de Controle</label>
+                                        <div class="row g-2 mb-2">
+                                            <div class="col-6">
+                                                <input type="number" class="form-control form-control-sm" id="bezierP0x" value="50" placeholder="P0x">
+                                            </div>
+                                            <div class="col-6">
+                                                <input type="number" class="form-control form-control-sm" id="bezierP0y" value="200" placeholder="P0y">
+                                            </div>
+                                        </div>
+                                        <div class="row g-2 mb-2">
+                                            <div class="col-6">
+                                                <input type="number" class="form-control form-control-sm" id="bezierP1x" value="100" placeholder="P1x">
+                                            </div>
+                                            <div class="col-6">
+                                                <input type="number" class="form-control form-control-sm" id="bezierP1y" value="50" placeholder="P1y">
+                                            </div>
+                                        </div>
+                                        <div class="row g-2 mb-2">
+                                            <div class="col-6">
+                                                <input type="number" class="form-control form-control-sm" id="bezierP2x" value="200" placeholder="P2x">
+                                            </div>
+                                            <div class="col-6">
+                                                <input type="number" class="form-control form-control-sm" id="bezierP2y" value="200" placeholder="P2y">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-primary btn-sm w-100" id="drawBezier">
+                                        <i class="bi bi-pencil"></i> Desenhar Curva
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Polilinha -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#polylineCollapse">
+                                    <i class="bi bi-pentagon"></i> Polilinha
+                                </button>
+                            </h2>
+                            <div id="polylineCollapse" class="accordion-collapse collapse" data-bs-parent="#algorithmsAccordion">
+                                <div class="accordion-body">
+                                    <div class="mb-2">
+                                        <label class="form-label">Pontos (x,y separados por vírgula)</label>
+                                        <textarea class="form-control form-control-sm" id="polylinePoints" rows="3" placeholder="50,50, 100,100, 150,50, 200,100">50,50, 100,100, 150,50, 200,100</textarea>
+                                    </div>
+                                    <button class="btn btn-primary btn-sm w-100" id="drawPolyline">
+                                        <i class="bi bi-pencil"></i> Desenhar Polilinha
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Preenchimento -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#fillCollapse">
+                                    <i class="bi bi-fill"></i> Preenchimento
+                                </button>
+                            </h2>
+                            <div id="fillCollapse" class="accordion-collapse collapse" data-bs-parent="#algorithmsAccordion">
+                                <div class="accordion-body">
+                                    <div class="mb-2">
+                                        <label class="form-label">Ponto de Semente (x, y)</label>
+                                        <div class="row g-2">
+                                            <div class="col-6">
+                                                <input type="number" class="form-control form-control-sm" id="seedX" value="150" placeholder="x">
+                                            </div>
+                                            <div class="col-6">
+                                                <input type="number" class="form-control form-control-sm" id="seedY" value="150" placeholder="y">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Algoritmo</label>
+                                        <select class="form-select form-select-sm" id="fillAlgorithm">
+                                            <option value="recursive">Recursivo</option>
+                                            <option value="scanline">Varredura</option>
+                                        </select>
+                                    </div>
+                                    <button class="btn btn-primary btn-sm w-100" id="fillArea">
+                                        <i class="bi bi-pencil"></i> Preencher Área
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Transformações -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#transformCollapse">
+                                    <i class="bi bi-arrow-clockwise"></i> Transformações
+                                </button>
+                            </h2>
+                            <div id="transformCollapse" class="accordion-collapse collapse" data-bs-parent="#algorithmsAccordion">
+                                <div class="accordion-body">
+                                    <div class="mb-2">
+                                        <label class="form-label">Tipo</label>
+                                        <select class="form-select form-select-sm" id="transformType">
+                                            <option value="translation">Translação</option>
+                                            <option value="rotation">Rotação</option>
+                                            <option value="scale">Escala</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Parâmetros</label>
+                                        <div class="row g-2">
+                                            <div class="col-6">
+                                                <input type="number" class="form-control form-control-sm" id="transformParam1" value="10" placeholder="dx/ângulo/sx">
+                                            </div>
+                                            <div class="col-6">
+                                                <input type="number" class="form-control form-control-sm" id="transformParam2" value="10" placeholder="dy/centro/sy">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-primary btn-sm w-100" id="applyTransform">
+                                        <i class="bi bi-arrow-clockwise"></i> Aplicar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Projeções 3D -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#projectionCollapse">
+                                    <i class="bi bi-box"></i> Projeções 3D
+                                </button>
+                            </h2>
+                            <div id="projectionCollapse" class="accordion-collapse collapse" data-bs-parent="#algorithmsAccordion">
+                                <div class="accordion-body">
+                                    <div class="mb-2">
+                                        <label class="form-label">Tipo de Projeção</label>
+                                        <select class="form-select form-select-sm" id="projectionType">
+                                            <option value="orthographic">Ortogonal</option>
+                                            <option value="perspective">Perspectiva</option>
+                                            <option value="cavalier">Cavalier</option>
+                                            <option value="cabinet">Cabinet</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Ângulos (graus)</label>
+                                        <div class="row g-2">
+                                            <div class="col-6">
+                                                <input type="number" class="form-control form-control-sm" id="projectionAngle1" value="30" placeholder="θ">
+                                            </div>
+                                            <div class="col-6">
+                                                <input type="number" class="form-control form-control-sm" id="projectionAngle2" value="45" placeholder="φ">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-primary btn-sm w-100" id="applyProjection">
+                                        <i class="bi bi-box"></i> Aplicar Projeção
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Configurações -->
+                    <div class="mt-4">
+                        <h6 class="sidebar-title">Configurações</h6>
+                        <div class="mb-2">
+                            <label class="form-label">Cor</label>
+                            <input type="color" class="form-control form-control-color" id="drawColor" value="#ff0000">
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Espessura</label>
+                            <input type="range" class="form-range" id="lineWidth" min="1" max="10" value="1">
+                            <small class="text-muted">1px - 10px</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Área de Desenho -->
+            <div class="col-md-9 col-lg-10">
+                <div class="canvas-container">
+                    <canvas id="drawingCanvas" width="800" height="600"></canvas>
+                    <div class="canvas-overlay">
+                        <div class="coordinates-display" id="coordinatesDisplay">
+                            Coordenadas: (0, 0)
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
