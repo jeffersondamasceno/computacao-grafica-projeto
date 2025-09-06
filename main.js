@@ -54,6 +54,9 @@ class GraphicsCanvas {
             points: [],   // Armazena os pontos que o usuário clica
         };
         
+        // Array para armazenar todos os desenhos feitos na grade
+        this.savedDrawings = [];
+        
         // Inicia a configuração da aplicação
         this.init();
     }
@@ -100,6 +103,7 @@ class GraphicsCanvas {
 
         // Eventos para acionar os algoritmos de desenho
         document.getElementById('drawLine').addEventListener('click', () => this.drawLineFromInput());
+        document.getElementById('drawLineInteractive').addEventListener('click', () => this.startInteractiveLineDraw());
         document.getElementById('drawCircleFromInput').addEventListener('click', () => this.drawCircleFromInput());
         document.getElementById('drawCircleInteractive').addEventListener('click', () => this.startInteractiveCircleDraw());
         
@@ -212,6 +216,50 @@ class GraphicsCanvas {
         if (this.showGrid) {
             this.drawGrid();
         }
+        // Redesenha todos os desenhos salvos
+        this.redrawAllSavedDrawings();
+    }
+    
+    /**
+     * Redesenha todos os desenhos salvos no canvas.
+     */
+    redrawAllSavedDrawings() {
+        this.savedDrawings.forEach(drawing => {
+            this.drawSavedDrawing(drawing);
+        });
+    }
+    
+    /**
+     * Desenha um desenho salvo no canvas.
+     * @param {Object} drawing - Objeto contendo as informações do desenho
+     */
+    drawSavedDrawing(drawing) {
+        // Salva o estado atual do contexto
+        this.ctx.save();
+        
+        // Aplica as configurações do desenho
+        this.ctx.fillStyle = drawing.color;
+        this.ctx.strokeStyle = drawing.color;
+        this.ctx.lineWidth = drawing.lineWidth;
+        
+        if (drawing.type === 'line') {
+            // Desenha uma linha usando o algoritmo de Bresenham
+            bresenhamLine(this, drawing.x1, drawing.y1, drawing.x2, drawing.y2);
+        } else if (drawing.type === 'circle') {
+            // Desenha um círculo usando o algoritmo de midpoint
+            midpointCircle(this, drawing.centerX, drawing.centerY, drawing.radius);
+        }
+        
+        // Restaura o estado do contexto
+        this.ctx.restore();
+    }
+    
+    /**
+     * Salva um desenho no armazenamento de desenhos.
+     * @param {Object} drawingData - Dados do desenho a ser salvo
+     */
+    saveDrawing(drawingData) {
+        this.savedDrawings.push(drawingData);
     }
 
     /**
@@ -361,8 +409,28 @@ class GraphicsCanvas {
         const rect = this.canvas.getBoundingClientRect();
         const gridCoords = this.screenToGrid(e.clientX - rect.left, e.clientY - rect.top);
 
+        // Se estivermos no modo de definir o ponto final da linha, desenha uma pré-visualização.
+        if (this.drawingState.mode === 'line_end') {
+            this.redrawCanvas();
+            const startPoint = this.drawingState.points[0];
+            
+            // Desenha uma linha auxiliar para guiar o usuário
+            const startScreen = this.gridToScreen(startPoint.x, startPoint.y);
+            const endScreen = this.gridToScreen(gridCoords.x, gridCoords.y);
+            
+            this.ctx.strokeStyle = '#aaaaaa';
+            this.ctx.lineWidth = 1;
+            this.ctx.setLineDash([5, 5]); // Linha tracejada para indicar pré-visualização
+            this.ctx.beginPath();
+            this.ctx.moveTo(startScreen.x, startScreen.y);
+            this.ctx.lineTo(endScreen.x, endScreen.y);
+            this.ctx.stroke();
+            this.ctx.setLineDash([]); // Remove o tracejado
+            
+            this.updateCoordinatesDisplay(`Ponto final: (${gridCoords.x}, ${gridCoords.y}) | Clique para finalizar.`);
+        }
         // Se estivermos no modo de definir o raio do círculo, desenha uma pré-visualização.
-        if (this.drawingState.mode === 'circle_radius') {
+        else if (this.drawingState.mode === 'circle_radius') {
             this.redrawCanvas();
             const center = this.drawingState.points[0];
             const radius = Math.round(Math.sqrt(Math.pow(gridCoords.x - center.x, 2) + Math.pow(gridCoords.y - center.y, 2)));
@@ -391,8 +459,40 @@ class GraphicsCanvas {
         const rect = this.canvas.getBoundingClientRect();
         const gridCoords = this.screenToGrid(e.clientX - rect.left, e.clientY - rect.top);
 
+        // Lógica para o desenho interativo da linha (Bresenham)
+        if (this.drawingState.mode === 'line_start') {
+            // Valida se o ponto inicial está dentro dos limites
+            if (!this.validateCoordinates(gridCoords.x, gridCoords.y)) {
+                this.updateCoordinatesDisplay('Erro: Ponto inicial fora dos limites da grade!');
+                return;
+            }
+            this.drawingState.points.push(gridCoords);
+            this.drawingState.mode = 'line_end'; // Avança para o próximo passo
+            this.updateCoordinatesDisplay('Clique novamente para definir o ponto final da linha.');
+        } else if (this.drawingState.mode === 'line_end') {
+            // Valida se o ponto final está dentro dos limites
+            if (!this.validateCoordinates(gridCoords.x, gridCoords.y)) {
+                this.updateCoordinatesDisplay('Erro: Ponto final fora dos limites da grade!');
+                return;
+            }
+            const startPoint = this.drawingState.points[0];
+            
+            // Salva o desenho antes de executá-lo
+            this.saveDrawing({
+                type: 'line',
+                x1: startPoint.x,
+                y1: startPoint.y,
+                x2: gridCoords.x,
+                y2: gridCoords.y,
+                color: this.drawColor,
+                lineWidth: this.lineWidth
+            });
+            
+            bresenhamLine(this, startPoint.x, startPoint.y, gridCoords.x, gridCoords.y);
+            this.resetDrawingState(); // Finaliza o desenho
+        }
         // Lógica para o desenho interativo do círculo
-        if (this.drawingState.mode === 'circle_center') {
+        else if (this.drawingState.mode === 'circle_center') {
             // Valida se o centro está dentro dos limites
             if (!this.validateCoordinates(gridCoords.x, gridCoords.y)) {
                 this.updateCoordinatesDisplay('Erro: Centro fora dos limites da grade!');
@@ -412,6 +512,16 @@ class GraphicsCanvas {
                 this.updateCoordinatesDisplay('Erro: Raio muito grande para a grade atual!');
                 return;
             }
+            
+            // Salva o desenho antes de executá-lo
+            this.saveDrawing({
+                type: 'circle',
+                centerX: center.x,
+                centerY: center.y,
+                radius: radius,
+                color: this.drawColor,
+                lineWidth: this.lineWidth
+            });
             
             midpointCircle(this, center.x, center.y, radius);
             this.resetDrawingState(); // Finaliza o desenho
@@ -443,6 +553,7 @@ class GraphicsCanvas {
     
     /** Limpa o canvas e reseta o estado de desenho. */
     clearCanvas() {
+        this.savedDrawings = []; // Limpa todos os desenhos salvos
         this.redrawCanvas();
         this.resetDrawingState();
     }
@@ -643,6 +754,17 @@ class GraphicsCanvas {
             return;
         }
         
+        // Salva o desenho antes de executá-lo
+        this.saveDrawing({
+            type: 'line',
+            x1: x1,
+            y1: y1,
+            x2: x2,
+            y2: y2,
+            color: this.drawColor,
+            lineWidth: this.lineWidth
+        });
+        
         bresenhamLine(this, x1, y1, x2, y2);
     }
     
@@ -667,7 +789,24 @@ class GraphicsCanvas {
             return;
         }
         
+        // Salva o desenho antes de executá-lo
+        this.saveDrawing({
+            type: 'circle',
+            centerX: centerX,
+            centerY: centerY,
+            radius: radius,
+            color: this.drawColor,
+            lineWidth: this.lineWidth
+        });
+        
         midpointCircle(this, centerX, centerY, radius);
+    }
+
+    /** Inicia o modo de desenho interativo para linhas (Bresenham). */
+    startInteractiveLineDraw() {
+        this.resetDrawingState();
+        this.drawingState.mode = 'line_start';
+        this.updateCoordinatesDisplay('Clique no canvas para definir o ponto inicial da linha.');
     }
 
     /** Inicia o modo de desenho interativo para círculos. */
