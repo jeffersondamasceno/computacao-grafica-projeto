@@ -221,9 +221,27 @@ class GraphicsCanvas {
         
         console.log(`Desenhando linha de (${x1}, ${y1}) para (${x2}, ${y2})`);
         
-        // TODO: Implementar algoritmo de Bresenham
-        // Por enquanto, desenha uma linha simples
-        this.drawLineBetweenPoints(x1, y1, x2, y2);
+        // Detecta automaticamente se a entrada está em pixels de tela (origem no topo-esquerda)
+        // ou em coordenadas da malha (origem no centro). Se valores forem grandes como pixels,
+        // converte para coordenadas da malha.
+        const maxGridX = Math.floor(this.canvas.width / this.gridSize);
+        const maxGridY = Math.floor(this.canvas.height / this.gridSize);
+        const looksLikeScreenCoords = (v) => Math.abs(v) > Math.max(maxGridX, maxGridY);
+
+        let gx1 = x1, gy1 = y1, gx2 = x2, gy2 = y2;
+        if (looksLikeScreenCoords(x1) || looksLikeScreenCoords(y1) || looksLikeScreenCoords(x2) || looksLikeScreenCoords(y2)) {
+            const p1 = this.screenToGrid(x1, y1);
+            const p2 = this.screenToGrid(x2, y2);
+            gx1 = p1.x; gy1 = p1.y; gx2 = p2.x; gy2 = p2.y;
+        }
+
+        this.bresenhamLine(gx1, gy1, gx2, gy2);
+    }
+
+    // Implementação do algoritmo de Bresenham para todas as inclinações
+    bresenhamLine(x0, y0, x1, y1) {
+        // Usa a implementação do arquivo bresenham.js
+        Bresenham.drawLine(x0, y0, x1, y1, (x, y) => this.drawPixel(x, y));
     }
 
     // Algoritmo de círculo por ponto médio

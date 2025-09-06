@@ -60,10 +60,10 @@
                                         <label class="form-label">Ponto Inicial (x1, y1)</label>
                                         <div class="row g-2">
                                             <div class="col-6">
-                                                <input type="number" class="form-control form-control-sm" id="x1" value="50" placeholder="x1">
+                                                <input type="number" class="form-control form-control-sm" id="x1" value="0" max="20" min="-20" placeholder="x1">
                                             </div>
                                             <div class="col-6">
-                                                <input type="number" class="form-control form-control-sm" id="y1" value="50" placeholder="y1">
+                                                <input type="number" class="form-control form-control-sm" id="y1" value="0" max="15" min="-15" placeholder="y1">
                                             </div>
                                         </div>
                                     </div>
@@ -71,10 +71,10 @@
                                         <label class="form-label">Ponto Final (x2, y2)</label>
                                         <div class="row g-2">
                                             <div class="col-6">
-                                                <input type="number" class="form-control form-control-sm" id="x2" value="200" placeholder="x2">
+                                                <input type="number" class="form-control form-control-sm" id="x2" value="10" max="20" min="-20" placeholder="x2">
                                             </div>
                                             <div class="col-6">
-                                                <input type="number" class="form-control form-control-sm" id="y2" value="150" placeholder="y2">
+                                                <input type="number" class="form-control form-control-sm" id="y2" value="10" max="15" min="-15" placeholder="y2">
                                             </div>
                                         </div>
                                     </div>
@@ -358,6 +358,19 @@
     
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Algoritmos -->
+    <script src="algorithms/bresenham.js"></script>
+    <script src="algorithms/midpointCircle.js"></script>
+    <script src="algorithms/bezier.js"></script>
+    <script src="algorithms/polyline.js"></script>
+    <script src="algorithms/fill.js"></script>
+    <script src="algorithms/clipping.js"></script>
+    <script src="algorithms/transformations.js"></script>
+    <script src="algorithms/projections.js"></script>
+    <script src="algorithms/ellipse.js"></script>
+    
+    <!-- Script principal -->
     <script src="main.js"></script>
 </body>
 </html>
