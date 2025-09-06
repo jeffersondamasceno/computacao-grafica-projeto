@@ -30,9 +30,23 @@
                     <button class="btn btn-outline-light btn-sm me-2" id="clearCanvas">
                         <i class="bi bi-trash"></i> Limpar
                     </button>
-                    <button class="btn btn-outline-light btn-sm" id="toggleGrid">
+                    <button class="btn btn-outline-light btn-sm me-2" id="toggleGrid">
                         <i class="bi bi-grid"></i> Malha
                     </button>
+                    <div class="btn-group me-2" role="group">
+                        <button class="btn btn-outline-light btn-sm" id="zoomOut" title="Zoom Out (Ctrl+Scroll)">
+                            <i class="bi bi-zoom-out"></i>
+                        </button>
+                        <span class="btn btn-outline-light btn-sm disabled" id="zoomInfo" style="cursor: default; min-width: 60px;">
+                            100%
+                        </span>
+                        <button class="btn btn-outline-light btn-sm" id="zoomIn" title="Zoom In (Ctrl+Scroll)">
+                            <i class="bi bi-zoom-in"></i>
+                        </button>
+                        <button class="btn btn-outline-light btn-sm" id="zoomReset" title="Reset Zoom">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -331,6 +345,29 @@
                     <!-- Configurações -->
                     <div class="mt-4">
                         <h6 class="sidebar-title">Configurações</h6>
+                        
+                        <!-- Configuração da Grade -->
+                        <div class="mb-3">
+                            <h6 class="text-primary">Tamanho da Grade</h6>
+                            <div class="mb-2">
+                                <label class="form-label">Largura (X): <span id="gridWidthValue">20</span></label>
+                                <input type="range" class="form-range" id="gridWidth" min="10" max="100" value="20">
+                                <small class="text-muted">10 - 100 unidades</small>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Altura (Y): <span id="gridHeightValue">15</span></label>
+                                <input type="range" class="form-range" id="gridHeight" min="10" max="100" value="15">
+                                <small class="text-muted">10 - 100 unidades</small>
+                            </div>
+                            <button class="btn btn-outline-primary btn-sm w-100" id="applyGridSize">
+                                <i class="bi bi-check-circle"></i> Aplicar Tamanho
+                            </button>
+                            <small class="text-muted d-block mt-2">
+                                <i class="bi bi-info-circle"></i> 
+                                Tamanho do pixel: <span id="currentPixelSize">20</span>px
+                            </small>
+                        </div>
+                        
                         <div class="mb-2">
                             <label class="form-label">Cor</label>
                             <input type="color" class="form-control form-control-color" id="drawColor" value="#ff0000">
@@ -347,7 +384,9 @@
             <!-- Área de Desenho -->
             <div class="col-md-9 col-lg-10">
                 <div class="canvas-container">
-                    <canvas id="drawingCanvas" width="800" height="600"></canvas>
+                    <div class="canvas-scroll-container" id="canvasScrollContainer">
+                        <canvas id="drawingCanvas" width="800" height="600"></canvas>
+                    </div>
                     <div class="canvas-overlay">
                         <div class="coordinates-display" id="coordinatesDisplay">
                             Coordenadas: (0, 0)

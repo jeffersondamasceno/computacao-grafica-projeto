@@ -25,8 +25,24 @@ class GraphicsCanvas {
         this.ctx = this.canvas.getContext('2d');
 
         // --- 2. CONFIGURAÇÕES DO AMBIENTE ---
-        this.gridSize = 20; // Tamanho de cada célula da malha em pixels
+        this.gridSize = 20; // Tamanho de cada célula da malha em pixels (fixo e confortável)
         this.showGrid = true; // Controla a visibilidade da malha
+        
+        // Configurações da grade (limites do sistema de coordenadas)
+        this.gridWidth = 20; // Largura da grade em unidades (X)
+        this.gridHeight = 15; // Altura da grade em unidades (Y)
+        
+        // Sistema de scroll
+        this.scrollContainer = null; // Referência ao container de scroll
+        this.scrollX = 0; // Posição de scroll horizontal
+        this.scrollY = 0; // Posição de scroll vertical
+        
+        // Sistema de zoom
+        this.zoomLevel = 1.0; // Nível de zoom (1.0 = 100%)
+        this.minZoom = 0.25; // Zoom mínimo (25%)
+        this.maxZoom = 4.0; // Zoom máximo (400%)
+        this.zoomStep = 0.1; // Incremento/decremento do zoom
+        this.baseGridSize = 20; // Tamanho base dos pixels (sem zoom)
 
         // --- 3. ESTADO DO DESENHO ---
         this.drawColor = '#ff0000'; // Cor padrão para novas formas
@@ -47,6 +63,16 @@ class GraphicsCanvas {
      */
     init() {
         this.setupEventListeners();
+        this.setupScrollSystem(); // Configura o sistema de scroll
+        this.resizeCanvas(); // Redimensiona o canvas inicial
+        this.updateInputLimits(); // Inicializa os limites dos inputs
+        
+        // Atualiza a informação visual do tamanho do pixel
+        document.getElementById('currentPixelSize').textContent = this.gridSize;
+        
+        // Inicializa o sistema de zoom
+        this.updateZoomInfo();
+        
         this.redrawCanvas();
     }
 
@@ -61,10 +87,16 @@ class GraphicsCanvas {
         // Eventos do mouse diretamente no canvas
         this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
         this.canvas.addEventListener('click', (e) => this.handleCanvasClick(e));
+        this.canvas.addEventListener('wheel', (e) => this.handleMouseWheel(e));
 
         // Eventos de botões de controle geral
         document.getElementById('clearCanvas').addEventListener('click', () => this.clearCanvas());
         document.getElementById('toggleGrid').addEventListener('click', () => this.toggleGrid());
+        
+        // Eventos de zoom
+        document.getElementById('zoomIn').addEventListener('click', () => this.zoomIn());
+        document.getElementById('zoomOut').addEventListener('click', () => this.zoomOut());
+        document.getElementById('zoomReset').addEventListener('click', () => this.zoomReset());
 
         // Eventos para acionar os algoritmos de desenho
         document.getElementById('drawLine').addEventListener('click', () => this.drawLineFromInput());
@@ -77,7 +109,96 @@ class GraphicsCanvas {
         // Eventos para as configurações de desenho (cor, espessura)
         document.getElementById('drawColor').addEventListener('change', (e) => { this.drawColor = e.target.value; });
         document.getElementById('lineWidth').addEventListener('input', (e) => { this.lineWidth = parseInt(e.target.value); });
+        
+        // Eventos para configuração da grade
+        document.getElementById('gridWidth').addEventListener('input', (e) => {
+            document.getElementById('gridWidthValue').textContent = e.target.value;
+            this.previewGridSize(); // Mostra prévia do tamanho
+        });
+        document.getElementById('gridHeight').addEventListener('input', (e) => {
+            document.getElementById('gridHeightValue').textContent = e.target.value;
+            this.previewGridSize(); // Mostra prévia do tamanho
+        });
+        document.getElementById('applyGridSize').addEventListener('click', () => this.applyGridSize());
     }
+    
+    /** Configura o sistema de scroll para navegar pela grade. */
+    setupScrollSystem() {
+        this.scrollContainer = document.getElementById('canvasScrollContainer');
+        
+        // Event listener para detectar mudanças no scroll
+        this.scrollContainer.addEventListener('scroll', () => {
+            this.scrollX = this.scrollContainer.scrollLeft;
+            this.scrollY = this.scrollContainer.scrollTop;
+        });
+        
+        // Centraliza o scroll inicialmente
+        this.centerScroll();
+    }
+    
+    /** Centraliza o scroll na grade. */
+    centerScroll() {
+        if (!this.scrollContainer) return;
+        
+        // Calcula o tamanho total da grade em pixels
+        const totalWidth = this.gridWidth * this.gridSize;
+        const totalHeight = this.gridHeight * this.gridSize;
+        
+        // Calcula a posição central
+        const centerX = (totalWidth - this.scrollContainer.clientWidth) / 2;
+        const centerY = (totalHeight - this.scrollContainer.clientHeight) / 2;
+        
+        // Aplica o scroll centralizado
+        this.scrollContainer.scrollLeft = Math.max(0, centerX);
+        this.scrollContainer.scrollTop = Math.max(0, centerY);
+    }
+    
+    /** Aplica zoom in. */
+    zoomIn() {
+        this.setZoom(this.zoomLevel + this.zoomStep);
+    }
+    
+    /** Aplica zoom out. */
+    zoomOut() {
+        this.setZoom(this.zoomLevel - this.zoomStep);
+    }
+    
+    /** Reseta o zoom para 100%. */
+    zoomReset() {
+        this.setZoom(1.0);
+    }
+    
+    /** Define o nível de zoom com validação de limites. */
+    setZoom(newZoomLevel) {
+        // Valida os limites de zoom
+        newZoomLevel = Math.max(this.minZoom, Math.min(this.maxZoom, newZoomLevel));
+        
+        if (newZoomLevel === this.zoomLevel) return; // Não faz nada se o zoom não mudou
+        
+        // Calcula o novo tamanho dos pixels
+        this.zoomLevel = newZoomLevel;
+        this.gridSize = Math.round(this.baseGridSize * this.zoomLevel);
+        
+        // Redimensiona o canvas
+        this.resizeCanvas();
+        
+        // Redesenha a grade
+        this.redrawCanvas();
+        
+        // Atualiza a interface
+        this.updateZoomInfo();
+        this.updateInputLimits();
+    }
+    
+    /** Atualiza a informação de zoom na interface. */
+    updateZoomInfo() {
+        const zoomInfo = document.getElementById('zoomInfo');
+        if (zoomInfo) {
+            const percentage = Math.round(this.zoomLevel * 100);
+            zoomInfo.textContent = `${percentage}%`;
+        }
+    }
+    
 
     // =======================================================================
     // Seção: Renderização Principal e Malha
@@ -99,23 +220,48 @@ class GraphicsCanvas {
     drawGrid() {
         if (!this.showGrid) return;
         
-        // Desenha as linhas finas da grade
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
+        const halfWidth = Math.floor(this.gridWidth / 2);
+        const halfHeight = Math.floor(this.gridHeight / 2);
+        
+        // Calcula os limites da grade em pixels
+        const leftBound = centerX - halfWidth * this.gridSize;
+        const rightBound = centerX + halfWidth * this.gridSize;
+        const topBound = centerY - halfHeight * this.gridSize;
+        const bottomBound = centerY + halfHeight * this.gridSize;
+        
+        // Desenha as linhas finas da grade apenas dentro dos limites
         this.ctx.strokeStyle = '#e0e0e0';
         this.ctx.lineWidth = 0.5;
-        for (let x = 0; x <= this.canvas.width; x += this.gridSize) {
-            this.ctx.beginPath(); this.ctx.moveTo(x, 0); this.ctx.lineTo(x, this.canvas.height); this.ctx.stroke();
+        
+        // Linhas verticais
+        for (let x = leftBound; x <= rightBound; x += this.gridSize) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(x, topBound);
+            this.ctx.lineTo(x, bottomBound);
+            this.ctx.stroke();
         }
-        for (let y = 0; y <= this.canvas.height; y += this.gridSize) {
-            this.ctx.beginPath(); this.ctx.moveTo(0, y); this.ctx.lineTo(this.canvas.width, y); this.ctx.stroke();
+        
+        // Linhas horizontais
+        for (let y = topBound; y <= bottomBound; y += this.gridSize) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(leftBound, y);
+            this.ctx.lineTo(rightBound, y);
+            this.ctx.stroke();
         }
         
         // Desenha os eixos X e Y (mais grossos e escuros)
         this.ctx.strokeStyle = '#999999';
         this.ctx.lineWidth = 1;
-        const centerX = this.canvas.width / 2;
-        const centerY = this.canvas.height / 2;
-        this.ctx.beginPath(); this.ctx.moveTo(0, centerY); this.ctx.lineTo(this.canvas.width, centerY); this.ctx.stroke();
-        this.ctx.beginPath(); this.ctx.moveTo(centerX, 0); this.ctx.lineTo(centerX, this.canvas.height); this.ctx.stroke();
+        this.ctx.beginPath();
+        this.ctx.moveTo(leftBound, centerY);
+        this.ctx.lineTo(rightBound, centerY);
+        this.ctx.stroke();
+        this.ctx.beginPath();
+        this.ctx.moveTo(centerX, topBound);
+        this.ctx.lineTo(centerX, bottomBound);
+        this.ctx.stroke();
 
         this.drawCoordinateNumbers();
     }
@@ -128,17 +274,26 @@ class GraphicsCanvas {
         this.ctx.font = '10px Arial';
         this.ctx.textAlign = 'center';
         
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
+        const halfWidth = Math.floor(this.gridWidth / 2);
+        const halfHeight = Math.floor(this.gridHeight / 2);
+        
         // Números no eixo X
-        for (let x = this.gridSize; x < this.canvas.width; x += this.gridSize) {
-            const coordX = this.screenToGrid(x, this.canvas.height / 2).x;
-            if (coordX !== 0) this.ctx.fillText(coordX.toString(), x, this.canvas.height / 2 - 5);
+        for (let i = -halfWidth; i <= halfWidth; i++) {
+            if (i !== 0) {
+                const x = centerX + i * this.gridSize;
+                this.ctx.fillText(i.toString(), x, centerY - 5);
+            }
         }
         
         // Números no eixo Y
         this.ctx.textAlign = 'right';
-        for (let y = this.gridSize; y < this.canvas.height; y += this.gridSize) {
-            const coordY = this.screenToGrid(this.canvas.width / 2, y).y;
-            if (coordY !== 0) this.ctx.fillText(coordY.toString(), this.canvas.width / 2 - 5, y + 4);
+        for (let i = -halfHeight; i <= halfHeight; i++) {
+            if (i !== 0) {
+                const y = centerY - i * this.gridSize;
+                this.ctx.fillText(i.toString(), centerX - 5, y + 4);
+            }
         }
     }
 
@@ -182,6 +337,11 @@ class GraphicsCanvas {
      * @param {string} [color=null] - Uma cor opcional. Se não for fornecida, usa a cor padrão.
      */
     drawPixel(gridX, gridY, color = null) {
+        // Valida se o pixel está dentro dos limites da grade
+        if (!this.validateCoordinates(gridX, gridY)) {
+            return; // Não desenha se estiver fora dos limites
+        }
+        
         const screenPos = this.gridToScreen(gridX, gridY);
         const pixelSize = this.gridSize;
         this.ctx.fillStyle = color || this.drawColor;
@@ -217,7 +377,9 @@ class GraphicsCanvas {
             this.updateCoordinatesDisplay(`Raio: ${radius} | Clique para finalizar.`);
         } else if (!this.drawingState.mode) {
             // Se não estiver em nenhum modo, apenas mostra as coordenadas.
-            this.updateCoordinatesDisplay(`Coordenadas: (${gridCoords.x}, ${gridCoords.y})`);
+            const isValid = this.validateCoordinates(gridCoords.x, gridCoords.y);
+            const status = isValid ? '' : ' (fora dos limites)';
+            this.updateCoordinatesDisplay(`Coordenadas: (${gridCoords.x}, ${gridCoords.y})${status}`);
         }
     }
 
@@ -231,15 +393,48 @@ class GraphicsCanvas {
 
         // Lógica para o desenho interativo do círculo
         if (this.drawingState.mode === 'circle_center') {
+            // Valida se o centro está dentro dos limites
+            if (!this.validateCoordinates(gridCoords.x, gridCoords.y)) {
+                this.updateCoordinatesDisplay('Erro: Centro fora dos limites da grade!');
+                return;
+            }
             this.drawingState.points.push(gridCoords);
             this.drawingState.mode = 'circle_radius'; // Avança para o próximo passo
             this.updateCoordinatesDisplay('Clique novamente para definir o raio.');
         } else if (this.drawingState.mode === 'circle_radius') {
             const center = this.drawingState.points[0];
             const radius = Math.round(Math.sqrt(Math.pow(gridCoords.x - center.x, 2) + Math.pow(gridCoords.y - center.y, 2)));
+            
+            // Valida se o raio não excede os limites
+            const halfWidth = Math.floor(this.gridWidth / 2);
+            const halfHeight = Math.floor(this.gridHeight / 2);
+            if (radius > Math.min(halfWidth, halfHeight)) {
+                this.updateCoordinatesDisplay('Erro: Raio muito grande para a grade atual!');
+                return;
+            }
+            
             midpointCircle(this, center.x, center.y, radius);
             this.resetDrawingState(); // Finaliza o desenho
         }
+    }
+    
+    /**
+     * Lida com o scroll do mouse para zoom (Ctrl+Scroll).
+     * @param {WheelEvent} e - O objeto de evento do wheel.
+     */
+    handleMouseWheel(e) {
+        // Verifica se Ctrl está pressionado
+        if (!e.ctrlKey) return;
+        
+        // Previne o comportamento padrão do scroll
+        e.preventDefault();
+        
+        // Determina a direção do zoom
+        const delta = e.deltaY > 0 ? -this.zoomStep : this.zoomStep;
+        const newZoomLevel = this.zoomLevel + delta;
+        
+        // Aplica o zoom
+        this.setZoom(newZoomLevel);
     }
 
     // =======================================================================
@@ -258,6 +453,163 @@ class GraphicsCanvas {
         this.redrawCanvas();
     }
     
+    /** Aplica o novo tamanho da grade e atualiza os limites dos inputs. */
+    applyGridSize() {
+        this.gridWidth = parseInt(document.getElementById('gridWidth').value);
+        this.gridHeight = parseInt(document.getElementById('gridHeight').value);
+        
+        // Mantém o zoom atual, mas atualiza o tamanho base
+        this.baseGridSize = 20; // Tamanho base dos pixels
+        this.gridSize = Math.round(this.baseGridSize * this.zoomLevel);
+        
+        // Redimensiona o canvas para acomodar a nova grade
+        this.resizeCanvas();
+        
+        // Atualiza os limites dos inputs dos algoritmos
+        this.updateInputLimits();
+        
+        // Centraliza o scroll na nova grade
+        this.centerScroll();
+        
+        // Redesenha o canvas com a nova grade
+        this.redrawCanvas();
+        
+        // Atualiza a informação visual do tamanho do pixel
+        document.getElementById('currentPixelSize').textContent = this.gridSize;
+        
+        this.updateCoordinatesDisplay(`Grade atualizada: ${this.gridWidth}x${this.gridHeight} (pixel: ${this.gridSize}px)`);
+    }
+    
+    /** Redimensiona o canvas para acomodar a nova grade. */
+    resizeCanvas() {
+        // Calcula o novo tamanho do canvas baseado na grade
+        const newWidth = this.gridWidth * this.gridSize;
+        const newHeight = this.gridHeight * this.gridSize;
+        
+        // Redimensiona o canvas
+        this.canvas.width = newWidth;
+        this.canvas.height = newHeight;
+        
+        // Atualiza o contexto após redimensionar
+        this.ctx = this.canvas.getContext('2d');
+    }
+    
+    /** Calcula o tamanho ideal dos pixels da grade para que ela caiba completamente no canvas. */
+    calculateOptimalGridSize() {
+        // Margem de segurança para não colar nas bordas do canvas
+        const margin = 60; // Aumentei a margem para dar mais espaço
+        const availableWidth = this.canvas.width - margin;
+        const availableHeight = this.canvas.height - margin;
+        
+        // Calcula o tamanho máximo que cada célula pode ter
+        const maxCellWidth = availableWidth / this.gridWidth;
+        const maxCellHeight = availableHeight / this.gridHeight;
+        
+        // Usa o menor valor para garantir que a grade caiba tanto em largura quanto em altura
+        this.gridSize = Math.floor(Math.min(maxCellWidth, maxCellHeight));
+        
+        // Garante um tamanho mínimo para legibilidade
+        this.gridSize = Math.max(this.gridSize, 6);
+        
+        // Para grades muito grandes, garante que pelo menos seja visível
+        if (this.gridSize < 6) {
+            this.gridSize = 6;
+        }
+    }
+    
+    /** Mostra uma prévia do tamanho do pixel que será usado para a grade selecionada. */
+    previewGridSize() {
+        const previewWidth = parseInt(document.getElementById('gridWidth').value);
+        const previewHeight = parseInt(document.getElementById('gridHeight').value);
+        
+        // Tamanho do pixel considerando o zoom atual
+        const previewPixelSize = Math.round(this.baseGridSize * this.zoomLevel);
+        
+        // Calcula o tamanho total que a grade terá
+        const totalWidth = previewWidth * previewPixelSize;
+        const totalHeight = previewHeight * previewPixelSize;
+        
+        // Atualiza a informação visual
+        document.getElementById('currentPixelSize').textContent = `${previewPixelSize}px (${totalWidth}x${totalHeight}px)`;
+    }
+    
+    /** Atualiza os limites (min/max) de todos os inputs de coordenadas. */
+    updateInputLimits() {
+        const halfWidth = Math.floor(this.gridWidth / 2);
+        const halfHeight = Math.floor(this.gridHeight / 2);
+        
+        // Atualiza limites para Bresenham (linhas)
+        const bresenhamInputs = ['x1', 'y1', 'x2', 'y2'];
+        bresenhamInputs.forEach(id => {
+            const input = document.getElementById(id);
+            if (input) {
+                if (id === 'x1' || id === 'x2') {
+                    input.max = halfWidth;
+                    input.min = -halfWidth;
+                } else {
+                    input.max = halfHeight;
+                    input.min = -halfHeight;
+                }
+            }
+        });
+        
+        // Atualiza limites para círculos
+        const circleInputs = ['circleX', 'circleY'];
+        circleInputs.forEach(id => {
+            const input = document.getElementById(id);
+            if (input) {
+                if (id === 'circleX') {
+                    input.max = halfWidth;
+                    input.min = -halfWidth;
+                } else {
+                    input.max = halfHeight;
+                    input.min = -halfHeight;
+                }
+            }
+        });
+        
+        // Atualiza limite do raio do círculo
+        const radiusInput = document.getElementById('circleRadius');
+        if (radiusInput) {
+            const maxRadius = Math.min(halfWidth, halfHeight);
+            radiusInput.max = maxRadius;
+            radiusInput.min = 1;
+        }
+        
+        // Atualiza a informação visual do tamanho do pixel com zoom
+        document.getElementById('currentPixelSize').textContent = `${this.gridSize}px (zoom: ${Math.round(this.zoomLevel * 100)}%)`;
+        
+        // Atualiza limites para elipse
+        const ellipseInputs = ['ellipseX', 'ellipseY'];
+        ellipseInputs.forEach(id => {
+            const input = document.getElementById(id);
+            if (input) {
+                if (id === 'ellipseX') {
+                    input.max = halfWidth;
+                    input.min = -halfWidth;
+                } else {
+                    input.max = halfHeight;
+                    input.min = -halfHeight;
+                }
+            }
+        });
+        
+        // Atualiza limites para preenchimento
+        const fillInputs = ['seedX', 'seedY'];
+        fillInputs.forEach(id => {
+            const input = document.getElementById(id);
+            if (input) {
+                if (id === 'seedX') {
+                    input.max = halfWidth;
+                    input.min = -halfWidth;
+                } else {
+                    input.max = halfHeight;
+                    input.min = -halfHeight;
+                }
+            }
+        });
+    }
+    
     /** Reseta o estado do desenho interativo para o padrão. */
     resetDrawingState() {
         this.drawingState.mode = null;
@@ -270,6 +622,13 @@ class GraphicsCanvas {
         document.getElementById('coordinatesDisplay').textContent = message;
     }
     
+    /** Valida se as coordenadas estão dentro dos limites da grade. */
+    validateCoordinates(x, y) {
+        const halfWidth = Math.floor(this.gridWidth / 2);
+        const halfHeight = Math.floor(this.gridHeight / 2);
+        return x >= -halfWidth && x <= halfWidth && y >= -halfHeight && y <= halfHeight;
+    }
+    
     /** Aciona o algoritmo de Bresenham com os valores dos inputs. */
     drawLineFromInput() {
         this.resetDrawingState();
@@ -278,7 +637,12 @@ class GraphicsCanvas {
         const x2 = parseInt(document.getElementById('x2').value);
         const y2 = parseInt(document.getElementById('y2').value);
         
-        // CORREÇÃO AQUI: O nome da função estava com um typo.
+        // Valida se as coordenadas estão dentro dos limites da grade
+        if (!this.validateCoordinates(x1, y1) || !this.validateCoordinates(x2, y2)) {
+            this.updateCoordinatesDisplay('Erro: Coordenadas fora dos limites da grade!');
+            return;
+        }
+        
         bresenhamLine(this, x1, y1, x2, y2);
     }
     
@@ -288,6 +652,21 @@ class GraphicsCanvas {
         const centerX = parseInt(document.getElementById('circleX').value);
         const centerY = parseInt(document.getElementById('circleY').value);
         const radius = parseInt(document.getElementById('circleRadius').value);
+        
+        // Valida se as coordenadas estão dentro dos limites da grade
+        if (!this.validateCoordinates(centerX, centerY)) {
+            this.updateCoordinatesDisplay('Erro: Centro do círculo fora dos limites da grade!');
+            return;
+        }
+        
+        // Valida se o raio não excede os limites
+        const halfWidth = Math.floor(this.gridWidth / 2);
+        const halfHeight = Math.floor(this.gridHeight / 2);
+        if (radius > Math.min(halfWidth, halfHeight)) {
+            this.updateCoordinatesDisplay('Erro: Raio muito grande para a grade atual!');
+            return;
+        }
+        
         midpointCircle(this, centerX, centerY, radius);
     }
 
