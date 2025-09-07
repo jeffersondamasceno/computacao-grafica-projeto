@@ -8,6 +8,7 @@
 // Importa os algoritmos dos arquivos separados para que possamos usá-los aqui.
 import { midpointCircle } from './algorithms/midpointCircle.js';
 import { bresenhamLine } from './algorithms/bresenham.js';
+import { Polyline } from './algorithms/polyline.js';
 
 /**
  * @class GraphicsCanvas
@@ -50,7 +51,7 @@ class GraphicsCanvas {
 
         // Objeto que controla o estado de desenhos interativos (multi-cliques)
         this.drawingState = {
-            mode: null,   // Ex: 'circle_center', 'circle_radius'
+            mode: null,   // Ex: 'circle_center', 'circle_radius', 'polyline_draw'
             points: [],   // Armazena os pontos que o usuário clica
         };
         
@@ -90,6 +91,7 @@ class GraphicsCanvas {
         // Eventos do mouse diretamente no canvas
         this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
         this.canvas.addEventListener('click', (e) => this.handleCanvasClick(e));
+        this.canvas.addEventListener('dblclick', (e) => this.handleCanvasDblClick(e)); // Evento de clique duplo
         this.canvas.addEventListener('wheel', (e) => this.handleMouseWheel(e));
 
         // Eventos de botões de controle geral
@@ -106,6 +108,8 @@ class GraphicsCanvas {
         document.getElementById('drawLineInteractive').addEventListener('click', () => this.startInteractiveLineDraw());
         document.getElementById('drawCircleFromInput').addEventListener('click', () => this.drawCircleFromInput());
         document.getElementById('drawCircleInteractive').addEventListener('click', () => this.startInteractiveCircleDraw());
+        document.getElementById('drawPolyline').addEventListener('click', () => this.drawPolylineFromInput());
+        document.getElementById('drawPolylineInteractive').addEventListener('click', () => this.startInteractivePolylineDraw());
         
         // Placeholders para algoritmos futuros
         document.getElementById('drawEllipse').addEventListener('click', () => alert('Algoritmo de elipse ainda não implementado.'));
@@ -248,6 +252,8 @@ class GraphicsCanvas {
         } else if (drawing.type === 'circle') {
             // Desenha um círculo usando o algoritmo de midpoint
             midpointCircle(this, drawing.centerX, drawing.centerY, drawing.radius);
+        } else if (drawing.type === 'polyline') {
+            Polyline.drawPolyline(this, drawing.points);
         }
         
         // Restaura o estado do contexto
@@ -443,7 +449,31 @@ class GraphicsCanvas {
             this.ctx.arc(screenPos.x, screenPos.y, radius * this.gridSize, 0, 2 * Math.PI);
             this.ctx.stroke();
             this.updateCoordinatesDisplay(`Raio: ${radius} | Clique para finalizar.`);
-        } else if (!this.drawingState.mode) {
+        } 
+        // Se estivermos no modo de desenhar polilinha, desenha uma pré-visualização do próximo segmento.
+        else if (this.drawingState.mode === 'polyline_draw' && this.drawingState.points.length > 0) {
+            this.redrawCanvas(); // Limpa prévias antigas
+            
+            // Desenha os segmentos já confirmados
+            Polyline.drawPolyline(this, this.drawingState.points);
+
+            // Desenha uma linha auxiliar para o próximo segmento
+            const lastPoint = this.drawingState.points[this.drawingState.points.length - 1];
+            const startScreen = this.gridToScreen(lastPoint.x, lastPoint.y);
+            const endScreen = this.gridToScreen(gridCoords.x, gridCoords.y);
+            
+            this.ctx.strokeStyle = '#aaaaaa';
+            this.ctx.lineWidth = 1;
+            this.ctx.setLineDash([5, 5]);
+            this.ctx.beginPath();
+            this.ctx.moveTo(startScreen.x, startScreen.y);
+            this.ctx.lineTo(endScreen.x, endScreen.y);
+            this.ctx.stroke();
+            this.ctx.setLineDash([]);
+            
+            this.updateCoordinatesDisplay(`Próximo ponto: (${gridCoords.x}, ${gridCoords.y}) | Clique duplo para finalizar.`);
+        }
+        else if (!this.drawingState.mode) {
             // Se não estiver em nenhum modo, apenas mostra as coordenadas.
             const isValid = this.validateCoordinates(gridCoords.x, gridCoords.y);
             const status = isValid ? '' : ' (fora dos limites)';
@@ -525,6 +555,35 @@ class GraphicsCanvas {
             
             midpointCircle(this, center.x, center.y, radius);
             this.resetDrawingState(); // Finaliza o desenho
+        }
+        // Lógica para o desenho interativo da polilinha
+        else if (this.drawingState.mode === 'polyline_draw') {
+            if (!this.validateCoordinates(gridCoords.x, gridCoords.y)) {
+                this.updateCoordinatesDisplay('Erro: Ponto fora dos limites da grade!');
+                return;
+            }
+            this.drawingState.points.push(gridCoords);
+            this.redrawCanvas();
+            Polyline.drawPolyline(this, this.drawingState.points);
+        }
+    }
+
+    /**
+     * Lida com o clique duplo do mouse no canvas para finalizar desenhos.
+     * @param {MouseEvent} e - O objeto de evento do mouse.
+     */
+    handleCanvasDblClick(e) {
+        e.preventDefault(); // Previne a seleção de texto padrão do navegador
+        if (this.drawingState.mode === 'polyline_draw' && this.drawingState.points.length >= 2) {
+            // Salva o desenho finalizado
+            this.saveDrawing({
+                type: 'polyline',
+                points: [...this.drawingState.points], // Salva uma cópia dos pontos
+                color: this.drawColor,
+                lineWidth: this.lineWidth
+            });
+            this.redrawCanvas();
+            this.resetDrawingState();
         }
     }
     
@@ -802,6 +861,39 @@ class GraphicsCanvas {
         midpointCircle(this, centerX, centerY, radius);
     }
 
+    /** Aciona o algoritmo de Polilinha com os valores dos inputs. */
+    drawPolylineFromInput() {
+        this.resetDrawingState();
+        const pointsStr = document.getElementById('polylinePoints').value.trim();
+        const points = pointsStr.split(',').map(p => p.trim());
+
+        if (points.length % 2 !== 0 || points.length === 0) {
+            this.updateCoordinatesDisplay('Erro: Formato de pontos inválido. Use pares de x,y separados por vírgula.');
+            return;
+        }
+
+        const polylinePoints = [];
+        for (let i = 0; i < points.length; i += 2) {
+            const x = parseInt(points[i]);
+            const y = parseInt(points[i + 1]);
+
+            if (isNaN(x) || isNaN(y) || !this.validateCoordinates(x, y)) {
+                this.updateCoordinatesDisplay(`Erro: Ponto (${x}, ${y}) inválido ou fora dos limites.`);
+                return;
+            }
+            polylinePoints.push({ x, y });
+        }
+
+        this.saveDrawing({
+            type: 'polyline',
+            points: polylinePoints,
+            color: this.drawColor,
+            lineWidth: this.lineWidth
+        });
+
+        Polyline.drawPolyline(this, polylinePoints);
+    }
+
     /** Inicia o modo de desenho interativo para linhas (Bresenham). */
     startInteractiveLineDraw() {
         this.resetDrawingState();
@@ -814,6 +906,13 @@ class GraphicsCanvas {
         this.resetDrawingState();
         this.drawingState.mode = 'circle_center';
         this.updateCoordinatesDisplay('Clique no canvas para definir o centro do círculo.');
+    }
+
+    /** Inicia o modo de desenho interativo para polilinhas. */
+    startInteractivePolylineDraw() {
+        this.resetDrawingState();
+        this.drawingState.mode = 'polyline_draw';
+        this.updateCoordinatesDisplay('Clique para adicionar pontos. Dê um clique duplo para finalizar.');
     }
 }
 
