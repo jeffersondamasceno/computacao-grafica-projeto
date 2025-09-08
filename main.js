@@ -9,6 +9,7 @@
 import { midpointCircle } from './algorithms/midpointCircle.js';
 import { bresenhamLine } from './algorithms/bresenham.js';
 import { Polyline } from './algorithms/polyline.js';
+import { Fill } from './algorithms/fill.js'; // Importa a classe de preenchimento
 
 /**
  * @class GraphicsCanvas
@@ -23,7 +24,7 @@ class GraphicsCanvas {
     constructor(canvasId) {
         // --- 1. INICIALIZAÇÃO DO CANVAS E CONTEXTO ---
         this.canvas = document.getElementById(canvasId);
-        this.ctx = this.canvas.getContext('2d');
+        this.ctx = this.canvas.getContext('2d', { willReadFrequently: true }); // Habilita leitura de pixels
 
         // --- 2. CONFIGURAÇÕES DO AMBIENTE ---
         this.gridSize = 20; // Tamanho de cada célula da malha em pixels (fixo e confortável)
@@ -57,6 +58,7 @@ class GraphicsCanvas {
         
         // Array para armazenar todos os desenhos feitos na grade
         this.savedDrawings = [];
+        this.lastPolygon = null; // Armazena o último polígono desenhado
         
         // Inicia a configuração da aplicação
         this.init();
@@ -110,6 +112,8 @@ class GraphicsCanvas {
         document.getElementById('drawCircleInteractive').addEventListener('click', () => this.startInteractiveCircleDraw());
         document.getElementById('drawPolyline').addEventListener('click', () => this.drawPolylineFromInput());
         document.getElementById('drawPolylineInteractive').addEventListener('click', () => this.startInteractivePolylineDraw());
+        document.getElementById('fillArea').addEventListener('click', () => this.fillAreaFromInput());
+        document.getElementById('fillAreaInteractive').addEventListener('click', () => this.startInteractiveFill());
         
         // Placeholders para algoritmos futuros
         document.getElementById('drawEllipse').addEventListener('click', () => alert('Algoritmo de elipse ainda não implementado.'));
@@ -254,6 +258,13 @@ class GraphicsCanvas {
             midpointCircle(this, drawing.centerX, drawing.centerY, drawing.radius);
         } else if (drawing.type === 'polyline') {
             Polyline.drawPolyline(this, drawing.points);
+        } else if (drawing.type === 'polygon') {
+            Polyline.drawPolygon(this, drawing.points);
+        } else if (drawing.type === 'fill') {
+            // Desenha um preenchimento salvo
+            drawing.points.forEach(p => {
+                this.drawPixel(p.x, p.y, drawing.color);
+            });
         }
         
         // Restaura o estado do contexto
@@ -274,48 +285,35 @@ class GraphicsCanvas {
     drawGrid() {
         if (!this.showGrid) return;
         
+        this.ctx.strokeStyle = '#e0e0e0'; // Cor única para todas as linhas da grade
+        this.ctx.lineWidth = 0.5; // Linhas finas para a grade
+
         const centerX = this.canvas.width / 2;
         const centerY = this.canvas.height / 2;
         const halfWidth = Math.floor(this.gridWidth / 2);
         const halfHeight = Math.floor(this.gridHeight / 2);
         
-        // Calcula os limites da grade em pixels
-        const leftBound = centerX - halfWidth * this.gridSize;
-        const rightBound = centerX + halfWidth * this.gridSize;
-        const topBound = centerY - halfHeight * this.gridSize;
-        const bottomBound = centerY + halfHeight * this.gridSize;
-        
-        // Desenha as linhas finas da grade apenas dentro dos limites
-        this.ctx.strokeStyle = '#e0e0e0';
-        this.ctx.lineWidth = 0.5;
-        
         // Linhas verticais
-        for (let x = leftBound; x <= rightBound; x += this.gridSize) {
+        for (let i = -halfWidth; i <= halfWidth; i++) {
+            const x = centerX + i * this.gridSize;
+            // Garante que a linha seja desenhada dentro dos limites do canvas para evitar erros.
+            const screenX = Math.round(x) + 0.5; // Adiciona 0.5 para linhas mais nítidas
             this.ctx.beginPath();
-            this.ctx.moveTo(x, topBound);
-            this.ctx.lineTo(x, bottomBound);
+            this.ctx.moveTo(screenX, 0);
+            this.ctx.lineTo(screenX, this.canvas.height);
             this.ctx.stroke();
         }
         
         // Linhas horizontais
-        for (let y = topBound; y <= bottomBound; y += this.gridSize) {
+        for (let i = -halfHeight; i <= halfHeight; i++) {
+            const y = centerY - i * this.gridSize;
+            // Garante que a linha seja desenhada dentro dos limites
+            const screenY = Math.round(y) + 0.5;
             this.ctx.beginPath();
-            this.ctx.moveTo(leftBound, y);
-            this.ctx.lineTo(rightBound, y);
+            this.ctx.moveTo(0, screenY);
+            this.ctx.lineTo(this.canvas.width, screenY);
             this.ctx.stroke();
         }
-        
-        // Desenha os eixos X e Y (mais grossos e escuros)
-        this.ctx.strokeStyle = '#999999';
-        this.ctx.lineWidth = 1;
-        this.ctx.beginPath();
-        this.ctx.moveTo(leftBound, centerY);
-        this.ctx.lineTo(rightBound, centerY);
-        this.ctx.stroke();
-        this.ctx.beginPath();
-        this.ctx.moveTo(centerX, topBound);
-        this.ctx.lineTo(centerX, bottomBound);
-        this.ctx.stroke();
 
         this.drawCoordinateNumbers();
     }
@@ -401,6 +399,32 @@ class GraphicsCanvas {
         this.ctx.fillStyle = color || this.drawColor;
         // A posição é ajustada em metade do tamanho do pixel para centralizar o quadrado.
         this.ctx.fillRect(screenPos.x - pixelSize / 2, screenPos.y - pixelSize / 2, pixelSize, pixelSize);
+    }
+    
+    /**
+     * Obtém a cor de um pixel na grade.
+     * @param {number} gridX - A coordenada X da célula.
+     * @param {number} gridY - A coordenada Y da célula.
+     * @returns {{r: number, g: number, b: number, a: number}|null} Objeto com a cor RGBA ou null se fora dos limites.
+     */
+    getPixelColor(gridX, gridY) {
+        if (!this.validateCoordinates(gridX, gridY)) {
+            return null;
+        }
+        const screenPos = this.gridToScreen(gridX, gridY);
+        
+        // Prende as coordenadas aos limites do canvas para evitar erros
+        const clampedX = Math.max(0, Math.min(this.canvas.width - 1, Math.round(screenPos.x)));
+        const clampedY = Math.max(0, Math.min(this.canvas.height - 1, Math.round(screenPos.y)));
+
+        try {
+            const pixelData = this.ctx.getImageData(clampedX, clampedY, 1, 1).data;
+            return { r: pixelData[0], g: pixelData[1], b: pixelData[2], a: pixelData[3] };
+        } catch (e) {
+            console.error("Erro ao ler dados de pixel (pode ser devido a políticas de segurança do navegador):", e);
+            // Retorna branco como padrão em caso de erro
+            return { r: 255, g: 255, b: 255, a: 255 };
+        }
     }
 
     // =======================================================================
@@ -566,6 +590,21 @@ class GraphicsCanvas {
             this.redrawCanvas();
             Polyline.drawPolyline(this, this.drawingState.points);
         }
+        // Lógica para o preenchimento interativo
+        else if (this.drawingState.mode === 'fill_seed_point') {
+            if (!this.validateCoordinates(gridCoords.x, gridCoords.y)) {
+                this.updateCoordinatesDisplay('Erro: Ponto de semente fora dos limites da grade!');
+                return;
+            }
+            // Chama o algoritmo Flood Fill com o ponto clicado
+            const pointsToFill = Fill.floodFill(gridCoords.x, gridCoords.y, this.drawColor, this);
+            if (pointsToFill.length > 0) {
+                const fillDrawing = { type: 'fill', points: pointsToFill, color: this.drawColor };
+                this.saveDrawing(fillDrawing);
+                this.drawSavedDrawing(fillDrawing); // Desenha imediatamente
+            }
+            this.resetDrawingState(); // Finaliza o modo de preenchimento
+        }
     }
 
     /**
@@ -575,13 +614,19 @@ class GraphicsCanvas {
     handleCanvasDblClick(e) {
         e.preventDefault(); // Previne a seleção de texto padrão do navegador
         if (this.drawingState.mode === 'polyline_draw' && this.drawingState.points.length >= 2) {
-            // Salva o desenho finalizado
-            this.saveDrawing({
-                type: 'polyline',
-                points: [...this.drawingState.points], // Salva uma cópia dos pontos
+            // Fecha o polígono conectando o último ponto ao primeiro
+            const finalPoints = [...this.drawingState.points];
+            
+            const drawingData = {
+                type: 'polygon', // Salva como polígono fechado
+                points: finalPoints,
                 color: this.drawColor,
                 lineWidth: this.lineWidth
-            });
+            };
+
+            this.saveDrawing(drawingData);
+            this.lastPolygon = drawingData; // Armazena como o último polígono desenhado
+            
             this.redrawCanvas();
             this.resetDrawingState();
         }
@@ -613,6 +658,7 @@ class GraphicsCanvas {
     /** Limpa o canvas e reseta o estado de desenho. */
     clearCanvas() {
         this.savedDrawings = []; // Limpa todos os desenhos salvos
+        this.lastPolygon = null; // Limpa a referência ao último polígono
         this.redrawCanvas();
         this.resetDrawingState();
     }
@@ -661,7 +707,7 @@ class GraphicsCanvas {
         this.canvas.height = newHeight;
         
         // Atualiza o contexto após redimensionar
-        this.ctx = this.canvas.getContext('2d');
+        this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
     }
     
     /** Calcula o tamanho ideal dos pixels da grade para que ela caiba completamente no canvas. */
@@ -883,15 +929,18 @@ class GraphicsCanvas {
             }
             polylinePoints.push({ x, y });
         }
-
-        this.saveDrawing({
-            type: 'polyline',
+        
+        const drawingData = {
+            type: 'polygon', // Salva como polígono
             points: polylinePoints,
             color: this.drawColor,
             lineWidth: this.lineWidth
-        });
+        };
 
-        Polyline.drawPolyline(this, polylinePoints);
+        this.saveDrawing(drawingData);
+        this.lastPolygon = drawingData; // Armazena como último polígono
+
+        Polyline.drawPolygon(this, polylinePoints);
     }
 
     /** Inicia o modo de desenho interativo para linhas (Bresenham). */
@@ -913,6 +962,44 @@ class GraphicsCanvas {
         this.resetDrawingState();
         this.drawingState.mode = 'polyline_draw';
         this.updateCoordinatesDisplay('Clique para adicionar pontos. Dê um clique duplo para finalizar.');
+    }
+    
+    /** Aciona o algoritmo de preenchimento com os valores dos inputs. */
+    fillAreaFromInput() {
+        this.resetDrawingState();
+        const algorithm = document.getElementById('fillAlgorithm').value;
+        const seedX = parseInt(document.getElementById('seedX').value);
+        const seedY = parseInt(document.getElementById('seedY').value);
+        const fillColor = this.drawColor;
+
+        if (algorithm === 'recursive') {
+            if (!this.validateCoordinates(seedX, seedY)) {
+                this.updateCoordinatesDisplay('Erro: Ponto de semente fora dos limites da grade!');
+                return;
+            }
+            const pointsToFill = Fill.floodFill(seedX, seedY, fillColor, this);
+            if (pointsToFill.length > 0) {
+                const fillDrawing = { type: 'fill', points: pointsToFill, color: fillColor };
+                this.saveDrawing(fillDrawing);
+                this.drawSavedDrawing(fillDrawing); // Desenha imediatamente
+            }
+        } else if (algorithm === 'scanline') {
+            if (this.lastPolygon) {
+                // O Scanline ainda desenha diretamente pois é mais complexo de salvar como pontos
+                Fill.scanlineFill(this.lastPolygon.points, fillColor, this);
+            } else {
+                alert('Nenhum polígono foi desenhado para preencher. Desenhe um polígono primeiro usando a ferramenta de Polilinha Interativa (e clique duplo para fechar).');
+            }
+        }
+    }
+    
+    /** Inicia o modo de preenchimento interativo (Flood Fill). */
+    startInteractiveFill() {
+        this.resetDrawingState();
+        this.drawingState.mode = 'fill_seed_point';
+        // Define o algoritmo para Recursivo/Flood Fill, já que é o único que usa um ponto de semente
+        document.getElementById('fillAlgorithm').value = 'recursive'; 
+        this.updateCoordinatesDisplay('Clique em uma área fechada para preencher.');
     }
 }
 

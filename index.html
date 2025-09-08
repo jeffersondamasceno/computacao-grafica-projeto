@@ -250,23 +250,28 @@
                                         <label class="form-label">Ponto de Semente (x, y)</label>
                                         <div class="row g-2">
                                             <div class="col-6">
-                                                <input type="number" class="form-control form-control-sm" id="seedX" value="150" placeholder="x">
+                                                <input type="number" class="form-control form-control-sm" id="seedX" value="0" placeholder="x">
                                             </div>
                                             <div class="col-6">
-                                                <input type="number" class="form-control form-control-sm" id="seedY" value="150" placeholder="y">
+                                                <input type="number" class="form-control form-control-sm" id="seedY" value="0" placeholder="y">
                                             </div>
                                         </div>
                                     </div>
                                     <div class="mb-2">
                                         <label class="form-label">Algoritmo</label>
                                         <select class="form-select form-select-sm" id="fillAlgorithm">
-                                            <option value="recursive">Recursivo</option>
-                                            <option value="scanline">Varredura</option>
+                                            <option value="recursive">Recursivo (Flood Fill)</option>
+                                            <option value="scanline">Varredura (Scanline)</option>
                                         </select>
                                     </div>
-                                    <button class="btn btn-primary btn-sm w-100" id="fillArea">
-                                        <i class="bi bi-pencil"></i> Preencher Área
-                                    </button>
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-primary btn-sm" id="fillArea">
+                                            <i class="bi bi-input-cursor-text"></i> Preencher Área
+                                        </button>
+                                        <button class="btn btn-secondary btn-sm" id="fillAreaInteractive">
+                                            <i class="bi bi-pencil"></i> Preencher Interativo
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
