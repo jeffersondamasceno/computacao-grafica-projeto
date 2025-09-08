@@ -6,10 +6,12 @@
  */
 
 // Importa os algoritmos dos arquivos separados para que possamos usá-los aqui.
-import { midpointCircle } from './algorithms/midpointCircle.js';
 import { bresenhamLine } from './algorithms/bresenham.js';
+import { midpointCircle } from './algorithms/midpointCircle.js';
+import { midpointEllipse } from './algorithms/ellipse.js';
+import { drawBezierCurve } from './algorithms/bezier.js';
 import { Polyline } from './algorithms/polyline.js';
-import { Fill } from './algorithms/fill.js'; // Importa a classe de preenchimento
+import { Fill } from './algorithms/fill.js';
 
 /**
  * @class GraphicsCanvas
@@ -31,8 +33,8 @@ class GraphicsCanvas {
         this.showGrid = true; // Controla a visibilidade da malha
         
         // Configurações da grade (limites do sistema de coordenadas)
-        this.gridWidth = 20; // Largura da grade em unidades (X)
-        this.gridHeight = 15; // Altura da grade em unidades (Y)
+        this.gridWidth = 40; // Largura da grade em unidades (X)
+        this.gridHeight = 30; // Altura da grade em unidades (Y)
         
         // Sistema de scroll
         this.scrollContainer = null; // Referência ao container de scroll
@@ -108,15 +110,20 @@ class GraphicsCanvas {
         // Eventos para acionar os algoritmos de desenho
         document.getElementById('drawLine').addEventListener('click', () => this.drawLineFromInput());
         document.getElementById('drawLineInteractive').addEventListener('click', () => this.startInteractiveLineDraw());
+
         document.getElementById('drawCircleFromInput').addEventListener('click', () => this.drawCircleFromInput());
         document.getElementById('drawCircleInteractive').addEventListener('click', () => this.startInteractiveCircleDraw());
+
+        document.getElementById('drawEllipse').addEventListener('click', () => this.drawEllipseFromInput());
+        document.getElementById('drawEllipseInteractive').addEventListener('click', () => this.startInteractiveEllipseDraw());
+
+        document.getElementById('drawBezier').addEventListener('click', () => this.drawBezierFromInput());
+
         document.getElementById('drawPolyline').addEventListener('click', () => this.drawPolylineFromInput());
         document.getElementById('drawPolylineInteractive').addEventListener('click', () => this.startInteractivePolylineDraw());
+        
         document.getElementById('fillArea').addEventListener('click', () => this.fillAreaFromInput());
         document.getElementById('fillAreaInteractive').addEventListener('click', () => this.startInteractiveFill());
-        
-        // Placeholders para algoritmos futuros
-        document.getElementById('drawEllipse').addEventListener('click', () => alert('Algoritmo de elipse ainda não implementado.'));
 
         // Eventos para as configurações de desenho (cor, espessura)
         document.getElementById('drawColor').addEventListener('change', (e) => { this.drawColor = e.target.value; });
@@ -459,7 +466,29 @@ class GraphicsCanvas {
             this.ctx.arc(screenPos.x, screenPos.y, radius * this.gridSize, 0, 2 * Math.PI);
             this.ctx.stroke();
             this.updateCoordinatesDisplay(`Raio: ${radius} | Clique para finalizar.`);
-        } 
+        }
+        // Pré-visualização para Elipse (Raio X)
+        else if (this.drawingState.mode === 'ellipse_rx') {
+            this.redrawCanvas();
+            const center = this.drawingState.points[0];
+            const radiusX = Math.abs(gridCoords.x - center.x);
+            // Desenha linha horizontal de prévia
+            const startScreen = this.gridToScreen(center.x - radiusX, center.y);
+            const endScreen = this.gridToScreen(center.x + radiusX, center.y);
+            this.ctx.strokeStyle = '#aaaaaa'; this.ctx.lineWidth = 1; this.ctx.beginPath(); this.ctx.moveTo(startScreen.x, startScreen.y); this.ctx.lineTo(endScreen.x, endScreen.y); this.ctx.stroke();
+            this.updateCoordinatesDisplay(`Raio X: ${radiusX} | Clique para definir.`);
+        }
+        // Pré-visualização para Elipse (Raio Y e Elipse completa)
+        else if (this.drawingState.mode === 'ellipse_ry') {
+            this.redrawCanvas();
+            const center = this.drawingState.points[0];
+            const radiusX = this.drawingState.points[1].x; // rx já foi salvo
+            const radiusY = Math.abs(gridCoords.y - center.y);
+            // Desenha elipse de prévia
+            const screenCenter = this.gridToScreen(center.x, center.y);
+            this.ctx.strokeStyle = '#aaaaaa'; this.ctx.lineWidth = 1; this.ctx.beginPath(); this.ctx.ellipse(screenCenter.x, screenCenter.y, radiusX * this.gridSize, radiusY * this.gridSize, 0, 0, 2 * Math.PI); this.ctx.stroke();
+            this.updateCoordinatesDisplay(`Raio Y: ${radiusY} | Clique para finalizar.`);
+        }
         // Se estivermos no modo de desenhar polilinha, desenha uma pré-visualização do próximo segmento.
         else if (this.drawingState.mode === 'polyline_draw' && this.drawingState.points.length > 0) {
             this.redrawCanvas(); // Limpa prévias antigas
@@ -565,6 +594,25 @@ class GraphicsCanvas {
             
             midpointCircle(this, center.x, center.y, radius, this.drawColor);
             this.resetDrawingState(); // Finaliza o desenho
+        }
+        else if (this.drawingState.mode === 'ellipse_center') {
+            this.drawingState.points.push(gridCoords);
+            this.drawingState.mode = 'ellipse_rx';
+            this.updateCoordinatesDisplay('Clique para definir o raio horizontal (rx).');
+        } else if (this.drawingState.mode === 'ellipse_rx') {
+            const center = this.drawingState.points[0];
+            const radiusX = Math.abs(gridCoords.x - center.x);
+            this.drawingState.points.push({ x: radiusX }); // Salva o raio X
+            this.drawingState.mode = 'ellipse_ry';
+            this.updateCoordinatesDisplay('Clique para definir o raio vertical (ry).');
+        } else if (this.drawingState.mode === 'ellipse_ry') {
+            const center = this.drawingState.points[0];
+            const radiusX = this.drawingState.points[1].x;
+            const radiusY = Math.abs(gridCoords.y - center.y);
+            
+            this.saveDrawing({ type: 'ellipse', centerX: center.x, centerY: center.y, radiusX, radiusY, color: this.drawColor });
+            midpointEllipse(this, center.x, center.y, radiusX, radiusY, this.drawColor);
+            this.resetDrawingState();
         }
         // Lógica para o desenho interativo da polilinha
         else if (this.drawingState.mode === 'polyline_draw') {
@@ -858,6 +906,13 @@ class GraphicsCanvas {
         
         bresenhamLine(this, x1, y1, x2, y2, this.drawColor);
     }
+
+    /** Inicia o modo de desenho interativo para linhas (Bresenham). */
+    startInteractiveLineDraw() {
+        this.resetDrawingState();
+        this.drawingState.mode = 'line_start';
+        this.updateCoordinatesDisplay('Clique no canvas para definir o ponto inicial da linha.');
+    }
     
     /** Aciona o algoritmo de Círculo com os valores dos inputs. */
     drawCircleFromInput() {
@@ -891,6 +946,42 @@ class GraphicsCanvas {
         });
         
         midpointCircle(this, centerX, centerY, radius, this.drawColor);
+    }
+
+    /** Inicia o modo de desenho interativo para círculos. */
+    startInteractiveCircleDraw() {
+        this.resetDrawingState();
+        this.drawingState.mode = 'circle_center';
+        this.updateCoordinatesDisplay('Clique no canvas para definir o centro do círculo.');
+    }
+
+    /**
+     * Aciona o algoritmo de Elipse com os valores dos inputs.
+     */
+    drawEllipseFromInput() {
+        this.resetDrawingState();
+        const centerX = parseInt(document.getElementById('ellipseX').value);
+        const centerY = parseInt(document.getElementById('ellipseY').value);
+        const radiusX = parseInt(document.getElementById('ellipseA').value);
+        const radiusY = parseInt(document.getElementById('ellipseB').value);
+        midpointEllipse(this, centerX, centerY, radiusX, radiusY);
+    }
+
+    startInteractiveEllipseDraw() {
+        this.resetDrawingState();
+        this.drawingState.mode = 'ellipse_center';
+        this.updateCoordinatesDisplay('Clique no canvas para definir o centro da elipse.');
+    }
+
+    /**
+     * Aciona o algoritmo de Curva de Bézier com os valores dos inputs.
+     */
+    drawBezierFromInput() {
+        this.resetDrawingState();
+        const p0 = { x: parseInt(document.getElementById('bezierP0x').value), y: parseInt(document.getElementById('bezierP0y').value) };
+        const p1 = { x: parseInt(document.getElementById('bezierP1x').value), y: parseInt(document.getElementById('bezierP1y').value) };
+        const p2 = { x: parseInt(document.getElementById('bezierP2x').value), y: parseInt(document.getElementById('bezierP2y').value) };
+        drawBezierCurve(this, p0, p1, p2);
     }
 
     /** Aciona o algoritmo de Polilinha com os valores dos inputs. */
@@ -927,20 +1018,6 @@ class GraphicsCanvas {
         this.lastPolygon = drawingData; // Armazena como último polígono
 
         Polyline.drawPolygon(this, polylinePoints, this.drawColor);
-    }
-
-    /** Inicia o modo de desenho interativo para linhas (Bresenham). */
-    startInteractiveLineDraw() {
-        this.resetDrawingState();
-        this.drawingState.mode = 'line_start';
-        this.updateCoordinatesDisplay('Clique no canvas para definir o ponto inicial da linha.');
-    }
-
-    /** Inicia o modo de desenho interativo para círculos. */
-    startInteractiveCircleDraw() {
-        this.resetDrawingState();
-        this.drawingState.mode = 'circle_center';
-        this.updateCoordinatesDisplay('Clique no canvas para definir o centro do círculo.');
     }
 
     /** Inicia o modo de desenho interativo para polilinhas. */

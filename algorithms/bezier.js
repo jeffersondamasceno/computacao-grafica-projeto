@@ -1,50 +1,65 @@
-// Algoritmo de Curvas de Bézier
-// Implementação para curvas de Bézier usando Bresenham para rasterização
+/**
+ * @file Implementa o desenho de Curvas de Bézier Quadráticas.
+ * Utiliza o Algoritmo de De Casteljau para calcular os pontos e
+ * o Algoritmo de Bresenham para rasterizar a curva.
+ */
 
-class Bezier {
-    /**
-     * Desenha uma curva de Bézier quadrática
-     * @param {number} p0x - Coordenada x do ponto de controle 0
-     * @param {number} p0y - Coordenada y do ponto de controle 0
-     * @param {number} p1x - Coordenada x do ponto de controle 1
-     * @param {number} p1y - Coordenada y do ponto de controle 1
-     * @param {number} p2x - Coordenada x do ponto de controle 2
-     * @param {number} p2y - Coordenada y do ponto de controle 2
-     * @param {Function} drawPixel - Função para desenhar um pixel (x, y)
-     */
-    static drawQuadraticCurve(p0x, p0y, p1x, p1y, p2x, p2y, drawPixel) {
-        // TODO: Implementar algoritmo de Bézier quadrática
-        console.log(`Desenhando curva de Bézier com pontos P0(${p0x}, ${p0y}), P1(${p1x}, ${p1y}), P2(${p2x}, ${p2y})`);
-    }
+// Importamos Bresenham porque vamos usá-lo para conectar os pontos da curva.
+import { bresenhamLine } from './bresenham.js';
 
-    /**
-     * Desenha uma curva de Bézier cúbica
-     * @param {Array} controlPoints - Array de 4 pontos de controle {x, y}
-     * @param {Function} drawPixel - Função para desenhar um pixel (x, y)
-     */
-    static drawCubicCurve(controlPoints, drawPixel) {
-        // TODO: Implementar algoritmo de Bézier cúbica
-        console.log('Desenhando curva de Bézier cúbica');
-    }
+/**
+ * Calcula um ponto em uma curva de Bézier quadrática usando o Algoritmo de De Casteljau.
+ * @param {{x: number, y: number}} p0 - Ponto de controle 0 (início).
+ * @param {{x: number, y: number}} p1 - Ponto de controle 1 (guia).
+ * @param {{x: number, y: number}} p2 - Ponto de controle 2 (fim).
+ * @param {number} t - Parâmetro da curva, varia de 0 a 1.
+ * @returns {{x: number, y: number}} O ponto P(t) na curva.
+ */
+function deCasteljau(p0, p1, p2, t) {
+    const oneMinusT = 1 - t;
+    
+    // Interpolação linear entre p0 e p1
+    const q0x = oneMinusT * p0.x + t * p1.x;
+    const q0y = oneMinusT * p0.y + t * p1.y;
 
-    /**
-     * Calcula pontos de uma curva de Bézier quadrática
-     * @param {number} p0x - Coordenada x do ponto de controle 0
-     * @param {number} p0y - Coordenada y do ponto de controle 0
-     * @param {number} p1x - Coordenada x do ponto de controle 1
-     * @param {number} p1y - Coordenada y do ponto de controle 1
-     * @param {number} p2x - Coordenada x do ponto de controle 2
-     * @param {number} p2y - Coordenada y do ponto de controle 2
-     * @param {number} steps - Número de pontos a calcular
-     * @returns {Array} Array de pontos {x, y} da curva
-     */
-    static getQuadraticCurvePoints(p0x, p0y, p1x, p1y, p2x, p2y, steps = 100) {
-        // TODO: Implementar cálculo dos pontos da curva
-        return [];
-    }
+    // Interpolação linear entre p1 e p2
+    const q1x = oneMinusT * p1.x + t * p2.x;
+    const q1y = oneMinusT * p1.y + t * p2.y;
+
+    // Interpolação final entre os pontos intermediários
+    const x = oneMinusT * q0x + t * q1x;
+    const y = oneMinusT * q0y + t * q1y;
+    
+    return { x: Math.round(x), y: Math.round(y) };
 }
 
-// Exporta a classe para uso em outros módulos
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = Bezier;
+
+/**
+ * Desenha uma Curva de Bézier na tela.
+ * @param {object} graphics - A instância da classe GraphicsCanvas.
+ * @param {{x: number, y: number}} p0 - Ponto de controle 0.
+ * @param {{x: number, y: number}} p1 - Ponto de controle 1.
+ * @param {{x: number, y: number}} p2 - Ponto de controle 2.
+ */
+export function drawBezierCurve(graphics, p0, p1, p2) {
+    const points = [];
+    const step = 0.01; // Define a precisão da curva. Menor = mais suave.
+
+    // 1. Gerar uma lista de pontos ao longo da curva.
+    for (let t = 0; t <= 1; t += step) {
+        points.push(deCasteljau(p0, p1, p2, t));
+    }
+    // Garante que o último ponto seja exatamente p2.
+    points.push(p2);
+
+    // 2. Desenhar uma polilinha conectando os pontos gerados com Bresenham.
+    for (let i = 0; i < points.length - 1; i++) {
+        const startPoint = points[i];
+        const endPoint = points[i + 1];
+
+        // Evita desenhar segmentos de tamanho zero.
+        if (startPoint.x !== endPoint.x || startPoint.y !== endPoint.y) {
+            bresenhamLine(graphics, startPoint.x, startPoint.y, endPoint.x, endPoint.y);
+        }
+    }
 }

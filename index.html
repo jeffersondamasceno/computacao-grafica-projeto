@@ -147,10 +147,10 @@
                                         <label class="form-label">Centro (x, y)</label>
                                         <div class="row g-2">
                                             <div class="col-6">
-                                                <input type="number" class="form-control form-control-sm" id="ellipseX" value="150" placeholder="x">
+                                                <input type="number" class="form-control form-control-sm" id="ellipseX" value="0" placeholder="x">
                                             </div>
                                             <div class="col-6">
-                                                <input type="number" class="form-control form-control-sm" id="ellipseY" value="150" placeholder="y">
+                                                <input type="number" class="form-control form-control-sm" id="ellipseY" value="0" placeholder="y">
                                             </div>
                                         </div>
                                     </div>
@@ -158,16 +158,21 @@
                                         <label class="form-label">Semi-eixos (a, b)</label>
                                         <div class="row g-2">
                                             <div class="col-6">
-                                                <input type="number" class="form-control form-control-sm" id="ellipseA" value="60" placeholder="a">
+                                                <input type="number" class="form-control form-control-sm" id="ellipseA" value="8" placeholder="a">
                                             </div>
                                             <div class="col-6">
-                                                <input type="number" class="form-control form-control-sm" id="ellipseB" value="40" placeholder="b">
+                                                <input type="number" class="form-control form-control-sm" id="ellipseB" value="4" placeholder="b">
                                             </div>
                                         </div>
                                     </div>
-                                    <button class="btn btn-primary btn-sm w-100" id="drawEllipse">
-                                        <i class="bi bi-pencil"></i> Desenhar Elipse
-                                    </button>
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-primary btn-sm" id="drawEllipse">
+                                            <i class="bi bi-input-cursor-text"></i> Desenhar via Input
+                                        </button>
+                                        <button class="btn btn-secondary btn-sm" id="drawEllipseInteractive">
+                                            <i class="bi bi-pencil"></i> Desenhar Interativo
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -184,26 +189,26 @@
                                         <label class="form-label">Pontos de Controle</label>
                                         <div class="row g-2 mb-2">
                                             <div class="col-6">
-                                                <input type="number" class="form-control form-control-sm" id="bezierP0x" value="50" placeholder="P0x">
+                                                <input type="number" class="form-control form-control-sm" id="bezierP0x" value="10" placeholder="P0x">
                                             </div>
                                             <div class="col-6">
-                                                <input type="number" class="form-control form-control-sm" id="bezierP0y" value="200" placeholder="P0y">
-                                            </div>
-                                        </div>
-                                        <div class="row g-2 mb-2">
-                                            <div class="col-6">
-                                                <input type="number" class="form-control form-control-sm" id="bezierP1x" value="100" placeholder="P1x">
-                                            </div>
-                                            <div class="col-6">
-                                                <input type="number" class="form-control form-control-sm" id="bezierP1y" value="50" placeholder="P1y">
+                                                <input type="number" class="form-control form-control-sm" id="bezierP0y" value="10" placeholder="P0y">
                                             </div>
                                         </div>
                                         <div class="row g-2 mb-2">
                                             <div class="col-6">
-                                                <input type="number" class="form-control form-control-sm" id="bezierP2x" value="200" placeholder="P2x">
+                                                <input type="number" class="form-control form-control-sm" id="bezierP1x" value="-10" placeholder="P1x">
                                             </div>
                                             <div class="col-6">
-                                                <input type="number" class="form-control form-control-sm" id="bezierP2y" value="200" placeholder="P2y">
+                                                <input type="number" class="form-control form-control-sm" id="bezierP1y" value="0" placeholder="P1y">
+                                            </div>
+                                        </div>
+                                        <div class="row g-2 mb-2">
+                                            <div class="col-6">
+                                                <input type="number" class="form-control form-control-sm" id="bezierP2x" value="10" placeholder="P2x">
+                                            </div>
+                                            <div class="col-6">
+                                                <input type="number" class="form-control form-control-sm" id="bezierP2y" value="-10" placeholder="P2y">
                                             </div>
                                         </div>
                                     </div>

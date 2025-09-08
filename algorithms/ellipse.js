@@ -1,66 +1,64 @@
-// Algoritmo de Elipse
-// Implementação para desenho de elipses
+/**
+ * @file Contém a implementação do Algoritmo do Ponto Médio para Elipses.
+ */
 
-class Ellipse {
-    /**
-     * Desenha uma elipse usando algoritmo de ponto médio
-     * @param {number} centerX - Coordenada x do centro
-     * @param {number} centerY - Coordenada y do centro
-     * @param {number} a - Semi-eixo maior (horizontal)
-     * @param {number} b - Semi-eixo menor (vertical)
-     * @param {Function} drawPixel - Função para desenhar um pixel (x, y)
-     */
-    static drawEllipse(centerX, centerY, a, b, drawPixel) {
-        // TODO: Implementar algoritmo de elipse por ponto médio
-        console.log(`Desenhando elipse no centro (${centerX}, ${centerY}) com semi-eixos a=${a}, b=${b}`);
+/**
+ * Desenha uma elipse usando o Algoritmo do Ponto Médio.
+ * O algoritmo é dividido em duas regiões para otimizar o cálculo dos pixels.
+ * @param {object} graphics - A instância da classe GraphicsCanvas para acesso ao método drawPixel.
+ * @param {number} centerX - Coordenada X do centro da elipse.
+ * @param {number} centerY - Coordenada Y do centro.
+ * @param {number} radiusX - O raio no eixo X (semi-eixo maior).
+ * @param {number} radiusY - O raio no eixo Y (semi-eixo menor).
+ */
+export function midpointEllipse(graphics, centerX, centerY, radiusX, radiusY) {
+    let rx2 = radiusX * radiusX;
+    let ry2 = radiusY * radiusY;
+    let twoRx2 = 2 * rx2;
+    let twoRy2 = 2 * ry2;
+    let p;
+    let x = 0;
+    let y = radiusY;
+    let px = 0;
+    let py = twoRx2 * y;
+
+    // Função auxiliar para desenhar os 4 pontos simétricos
+    const drawEllipsePoints = (x, y) => {
+        graphics.drawPixel(centerX + x, centerY + y);
+        graphics.drawPixel(centerX - x, centerY + y);
+        graphics.drawPixel(centerX + x, centerY - y);
+        graphics.drawPixel(centerX - x, centerY - y);
+    };
+
+    // --- Região 1 ---
+    // Começa em (0, ry) e vai até o ponto onde a inclinação da curva é -1.
+    p = Math.round(ry2 - (rx2 * radiusY) + (0.25 * rx2));
+    while (px < py) {
+        x++;
+        px += twoRy2;
+        if (p < 0) {
+            p += ry2 + px;
+        } else {
+            y--;
+            py -= twoRx2;
+            p += ry2 + px - py;
+        }
+        drawEllipsePoints(x, y);
     }
 
-    /**
-     * Calcula os pontos de uma elipse usando algoritmo de ponto médio
-     * @param {number} centerX - Coordenada x do centro
-     * @param {number} centerY - Coordenada y do centro
-     * @param {number} a - Semi-eixo maior (horizontal)
-     * @param {number} b - Semi-eixo menor (vertical)
-     * @returns {Array} Array de pontos {x, y} da elipse
-     */
-    static getEllipsePoints(centerX, centerY, a, b) {
-        // TODO: Implementar cálculo dos pontos da elipse
-        return [];
+    // --- Região 2 ---
+    // Começa onde a Região 1 parou e continua até o eixo X.
+    p = Math.round(ry2 * (x + 0.5) * (x + 0.5) + rx2 * (y - 1) * (y - 1) - rx2 * ry2);
+    while (y > 0) {
+        y--;
+        py -= twoRx2;
+        if (p > 0) {
+            p += rx2 - py;
+        } else {
+            x++;
+            px += twoRy2;
+            p += rx2 - py + px;
+        }
+        drawEllipsePoints(x, y);
     }
-
-    /**
-     * Desenha uma elipse rotacionada
-     * @param {number} centerX - Coordenada x do centro
-     * @param {number} centerY - Coordenada y do centro
-     * @param {number} a - Semi-eixo maior
-     * @param {number} b - Semi-eixo menor
-     * @param {number} angle - Ângulo de rotação em radianos
-     * @param {Function} drawPixel - Função para desenhar um pixel (x, y)
-     */
-    static drawRotatedEllipse(centerX, centerY, a, b, angle, drawPixel) {
-        // TODO: Implementar elipse rotacionada
-        console.log(`Desenhando elipse rotacionada no centro (${centerX}, ${centerY}) com semi-eixos a=${a}, b=${b} e ângulo ${angle} radianos`);
-    }
-
-    /**
-     * Verifica se um ponto está dentro de uma elipse
-     * @param {number} x - Coordenada x do ponto
-     * @param {number} y - Coordenada y do ponto
-     * @param {number} centerX - Coordenada x do centro da elipse
-     * @param {number} centerY - Coordenada y do centro da elipse
-     * @param {number} a - Semi-eixo maior
-     * @param {number} b - Semi-eixo menor
-     * @returns {boolean} True se o ponto está dentro da elipse
-     */
-    static isPointInsideEllipse(x, y, centerX, centerY, a, b) {
-        // TODO: Implementar verificação de ponto dentro da elipse
-        const dx = x - centerX;
-        const dy = y - centerY;
-        return (dx * dx) / (a * a) + (dy * dy) / (b * b) <= 1;
-    }
-}
-
-// Exporta a classe para uso em outros módulos
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = Ellipse;
 }
