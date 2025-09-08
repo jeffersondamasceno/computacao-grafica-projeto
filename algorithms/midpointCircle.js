@@ -5,26 +5,27 @@
  * @param {number} centerX - Coordenada X do centro do círculo na malha.
  * @param {number} centerY - Coordenada Y do centro.
  * @param {number} radius - O raio do círculo em unidades da malha.
+ * @param {string} color - A cor para desenhar o círculo.
  */
-export function midpointCircle(graphics, centerX, centerY, radius) {
+export function midpointCircle(graphics, centerX, centerY, radius, color) {
     let x = 0;
     let y = radius;
     let p = 1 - radius; // Parâmetro de decisão inicial.
 
     // Função auxiliar para desenhar os 8 pontos simétricos de uma vez.
-    const drawCirclePoints = (cx, cy, x, y) => {
-        graphics.drawPixel(cx + x, cy + y);
-        graphics.drawPixel(cx - x, cy + y);
-        graphics.drawPixel(cx + x, cy - y);
-        graphics.drawPixel(cx - x, cy - y);
-        graphics.drawPixel(cx + y, cy + x);
-        graphics.drawPixel(cx - y, cy + x);
-        graphics.drawPixel(cx + y, cy - x);
-        graphics.drawPixel(cx - y, cy - x);
+    const drawCirclePoints = (cx, cy, x, y, c) => {
+        graphics.drawPixel(cx + x, cy + y, c);
+        graphics.drawPixel(cx - x, cy + y, c);
+        graphics.drawPixel(cx + x, cy - y, c);
+        graphics.drawPixel(cx - x, cy - y, c);
+        graphics.drawPixel(cx + y, cy + x, c);
+        graphics.drawPixel(cx - y, cy + x, c);
+        graphics.drawPixel(cx + y, cy - x, c);
+        graphics.drawPixel(cx - y, cy - x, c);
     };
 
     // Desenha o primeiro conjunto de pontos.
-    drawCirclePoints(centerX, centerY, x, y);
+    drawCirclePoints(centerX, centerY, x, y, color);
 
     // Loop para calcular os pontos do primeiro octante e espelhar para os outros.
     while (x < y) {
@@ -35,6 +36,6 @@ export function midpointCircle(graphics, centerX, centerY, radius) {
             y--;
             p += 2 * (x - y) + 1;
         }
-        drawCirclePoints(centerX, centerY, x, y);
+        drawCirclePoints(centerX, centerY, x, y, color);
     }
 }

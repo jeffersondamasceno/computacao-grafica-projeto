@@ -242,33 +242,19 @@ class GraphicsCanvas {
      * @param {Object} drawing - Objeto contendo as informações do desenho
      */
     drawSavedDrawing(drawing) {
-        // Salva o estado atual do contexto
-        this.ctx.save();
-        
-        // Aplica as configurações do desenho
-        this.ctx.fillStyle = drawing.color;
-        this.ctx.strokeStyle = drawing.color;
-        this.ctx.lineWidth = drawing.lineWidth;
-        
         if (drawing.type === 'line') {
-            // Desenha uma linha usando o algoritmo de Bresenham
-            bresenhamLine(this, drawing.x1, drawing.y1, drawing.x2, drawing.y2);
+            bresenhamLine(this, drawing.x1, drawing.y1, drawing.x2, drawing.y2, drawing.color);
         } else if (drawing.type === 'circle') {
-            // Desenha um círculo usando o algoritmo de midpoint
-            midpointCircle(this, drawing.centerX, drawing.centerY, drawing.radius);
+            midpointCircle(this, drawing.centerX, drawing.centerY, drawing.radius, drawing.color);
         } else if (drawing.type === 'polyline') {
-            Polyline.drawPolyline(this, drawing.points);
+            Polyline.drawPolyline(this, drawing.points, drawing.color);
         } else if (drawing.type === 'polygon') {
-            Polyline.drawPolygon(this, drawing.points);
+            Polyline.drawPolygon(this, drawing.points, drawing.color);
         } else if (drawing.type === 'fill') {
-            // Desenha um preenchimento salvo
             drawing.points.forEach(p => {
                 this.drawPixel(p.x, p.y, drawing.color);
             });
         }
-        
-        // Restaura o estado do contexto
-        this.ctx.restore();
     }
     
     /**
@@ -542,7 +528,7 @@ class GraphicsCanvas {
                 lineWidth: this.lineWidth
             });
             
-            bresenhamLine(this, startPoint.x, startPoint.y, gridCoords.x, gridCoords.y);
+            bresenhamLine(this, startPoint.x, startPoint.y, gridCoords.x, gridCoords.y, this.drawColor);
             this.resetDrawingState(); // Finaliza o desenho
         }
         // Lógica para o desenho interativo do círculo
@@ -577,7 +563,7 @@ class GraphicsCanvas {
                 lineWidth: this.lineWidth
             });
             
-            midpointCircle(this, center.x, center.y, radius);
+            midpointCircle(this, center.x, center.y, radius, this.drawColor);
             this.resetDrawingState(); // Finaliza o desenho
         }
         // Lógica para o desenho interativo da polilinha
@@ -588,7 +574,7 @@ class GraphicsCanvas {
             }
             this.drawingState.points.push(gridCoords);
             this.redrawCanvas();
-            Polyline.drawPolyline(this, this.drawingState.points);
+            Polyline.drawPolyline(this, this.drawingState.points, this.drawColor);
         }
         // Lógica para o preenchimento interativo
         else if (this.drawingState.mode === 'fill_seed_point') {
@@ -870,7 +856,7 @@ class GraphicsCanvas {
             lineWidth: this.lineWidth
         });
         
-        bresenhamLine(this, x1, y1, x2, y2);
+        bresenhamLine(this, x1, y1, x2, y2, this.drawColor);
     }
     
     /** Aciona o algoritmo de Círculo com os valores dos inputs. */
@@ -904,7 +890,7 @@ class GraphicsCanvas {
             lineWidth: this.lineWidth
         });
         
-        midpointCircle(this, centerX, centerY, radius);
+        midpointCircle(this, centerX, centerY, radius, this.drawColor);
     }
 
     /** Aciona o algoritmo de Polilinha com os valores dos inputs. */
@@ -940,7 +926,7 @@ class GraphicsCanvas {
         this.saveDrawing(drawingData);
         this.lastPolygon = drawingData; // Armazena como último polígono
 
-        Polyline.drawPolygon(this, polylinePoints);
+        Polyline.drawPolygon(this, polylinePoints, this.drawColor);
     }
 
     /** Inicia o modo de desenho interativo para linhas (Bresenham). */

@@ -6,8 +6,9 @@ export class Polyline {
      * Uma polilinha é uma sequência de segmentos de reta conectados.
      * @param {object} graphics - A instância da classe GraphicsCanvas, para ter acesso a métodos como drawPixel.
      * @param {Array<object>} points - Array de objetos de ponto {x, y}.
+     * @param {string} color - A cor para desenhar a polilinha.
      */
-    static drawPolyline(graphics, points) {
+    static drawPolyline(graphics, points, color) {
         // Para desenhar uma linha, precisamos de pelo menos 2 pontos.
         if (!points || points.length < 2) {
             console.error("Para desenhar uma polilinha, são necessários pelo menos dois pontos.");
@@ -19,7 +20,7 @@ export class Polyline {
             const startPoint = points[i];
             const endPoint = points[i + 1];
             // Utiliza o algoritmo de Bresenham para desenhar o segmento.
-            bresenhamLine(graphics, startPoint.x, startPoint.y, endPoint.x, endPoint.y);
+            bresenhamLine(graphics, startPoint.x, startPoint.y, endPoint.x, endPoint.y, color);
         }
     }
 
@@ -27,8 +28,9 @@ export class Polyline {
      * Desenha uma polilinha fechada (polígono), conectando o último ponto de volta ao primeiro.
      * @param {object} graphics - A instância da classe GraphicsCanvas.
      * @param {Array<object>} points - Array de objetos de ponto {x, y} que formam os vértices do polígono.
+     * @param {string} color - A cor para desenhar o polígono.
      */
-    static drawPolygon(graphics, points) {
+    static drawPolygon(graphics, points, color) {
         // Para desenhar um polígono, precisamos de pelo menos 3 pontos.
         if (!points || points.length < 3) {
             console.error("Para desenhar um polígono, são necessários pelo menos três pontos.");
@@ -36,12 +38,12 @@ export class Polyline {
         }
 
         // Desenha todos os segmentos da polilinha.
-        this.drawPolyline(graphics, points);
+        this.drawPolyline(graphics, points, color);
 
         // Conecta o último ponto de volta ao primeiro para fechar a forma.
         const firstPoint = points[0];
         const lastPoint = points[points.length - 1];
-        bresenhamLine(graphics, lastPoint.x, lastPoint.y, firstPoint.x, firstPoint.y);
+        bresenhamLine(graphics, lastPoint.x, lastPoint.y, firstPoint.x, firstPoint.y, color);
     }
 
     /**
