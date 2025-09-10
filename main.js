@@ -12,6 +12,7 @@ import { midpointEllipse } from './algorithms/ellipse.js';
 import { drawBezierCurve } from './algorithms/bezier.js';
 import { Polyline } from './algorithms/polyline.js';
 import { Fill } from './algorithms/fill.js';
+import { Transformations } from './algorithms/transformations.js';
 
 /**
  * @class GraphicsCanvas
@@ -124,6 +125,9 @@ class GraphicsCanvas {
         
         document.getElementById('fillArea').addEventListener('click', () => this.fillAreaFromInput());
         document.getElementById('fillAreaInteractive').addEventListener('click', () => this.startInteractiveFill());
+
+        document.getElementById('applyTransform').addEventListener('click', () => this.applyTransform());
+        document.getElementById('transformType').addEventListener('change', (e) => this.handleTransformTypeChange(e));
 
         // Eventos para as configurações de desenho (cor, espessura)
         document.getElementById('drawColor').addEventListener('change', (e) => { this.drawColor = e.target.value; });
@@ -1064,6 +1068,105 @@ class GraphicsCanvas {
         document.getElementById('fillAlgorithm').value = 'recursive'; 
         this.updateCoordinatesDisplay('Clique em uma área fechada para preencher.');
     }
+
+
+
+
+
+    // Adicione estes dois novos métodos dentro da classe GraphicsCanvas.
+
+    /**
+     * Calcula o centroide (ponto central) de uma forma baseada em seus vértices.
+     * @param {Array<{x: number, y: number}>} points - A lista de pontos da forma.
+     * @returns {{x: number, y: number}} O ponto central.
+     * @private
+     */
+    _getShapeCentroid(points) {
+        if (!points || points.length === 0) return { x: 0, y: 0 };
+        const sum = points.reduce((acc, p) => ({ x: acc.x + p.x, y: acc.y + p.y }), { x: 0, y: 0 });
+        return {
+            x: Math.round(sum.x / points.length),
+            y: Math.round(sum.y / points.length)
+        };
+    }
+
+    /**
+     * Aplica a transformação selecionada ao último objeto desenhado que seja transformável (com pontos).
+     */
+    applyTransform() {
+        // Encontra o último desenho que possui um array de 'points' (polígonos, polilinhas, etc.)
+        const lastDrawing = this.savedDrawings.slice().reverse().find(d => d.points);
+
+        if (!lastDrawing || !lastDrawing.points) {
+            alert("Nenhum objeto transformável (como um polígono) foi desenhado. Desenhe uma polilinha e feche-a com um clique duplo.");
+            return;
+        }
+
+        const type = document.getElementById('transformType').value;
+        let transformedPoints = []; // Array para guardar os novos pontos
+
+        switch (type) {
+            case 'translation': { // Usamos chaves para criar um escopo para as variáveis
+                const dx = parseFloat(document.getElementById('translateX').value);
+                const dy = parseFloat(document.getElementById('translateY').value);
+                
+                // 1. CHAMA A FUNÇÃO DE TRANSLAÇÃO
+                transformedPoints = Transformations.translate(lastDrawing.points, dx, dy);
+                break;
+            }
+
+            case 'rotation': {
+                const angle = parseFloat(document.getElementById('rotationAngle').value);
+                // O pivô é um objeto {x, y}
+                const pivot = {
+                    x: parseFloat(document.getElementById('rotationPivotX').value),
+                    y: parseFloat(document.getElementById('rotationPivotY').value)
+                };
+                
+                // 2. CHAMA A FUNÇÃO DE ROTAÇÃO
+                transformedPoints = Transformations.rotate(lastDrawing.points, angle, pivot);
+                break;
+            }
+
+            case 'scale': {
+                const sx = parseFloat(document.getElementById('scaleX').value);
+                const sy = parseFloat(document.getElementById('scaleY').value);
+                // O ponto fixo (pivô) também é um objeto {x, y}
+                const center = {
+                    x: parseFloat(document.getElementById('scaleCenterX').value),
+                    y: parseFloat(document.getElementById('scaleCenterY').value)
+                };
+
+                // 3. CHAMA A FUNÇÃO DE ESCALA
+                transformedPoints = Transformations.scale(lastDrawing.points, sx, sy, center);
+                break;
+            }
+        }
+
+        // 4. ATUALIZA O OBJETO ORIGINAL com os novos pontos transformados
+        if (transformedPoints.length > 0) {
+            lastDrawing.points = transformedPoints;
+        }
+        
+        // 5. REDESENHA O CANVAS para mostrar o resultado da transformação
+        this.redrawCanvas();
+    }
+
+    /**
+     * Lida com a mudança no seletor de tipo de transformação, mostrando os inputs relevantes.
+     */
+    handleTransformTypeChange(event) {
+        const selectedType = event.target.value;
+        
+        // Esconde todos os containers de input de transformação
+        document.querySelectorAll('.transform-inputs').forEach(div => {
+            div.style.display = 'none';
+        });
+
+        // Mostra apenas o container relevante
+        document.getElementById(`${selectedType}Inputs`).style.display = 'block';
+    }
+
 }
 
 // =======================================================================

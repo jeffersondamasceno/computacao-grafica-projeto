@@ -284,33 +284,76 @@
                         <div class="accordion-item">
                             <h2 class="accordion-header">
                                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#transformCollapse">
-                                    <i class="bi bi-arrow-clockwise"></i> Transformações
+                                    <i class="bi bi-arrows-move"></i> Transformações 2D
                                 </button>
                             </h2>
                             <div id="transformCollapse" class="accordion-collapse collapse" data-bs-parent="#algorithmsAccordion">
                                 <div class="accordion-body">
-                                    <div class="mb-2">
-                                        <label class="form-label">Tipo</label>
+                                    <div class="mb-3">
+                                        <label for="transformType" class="form-label">Tipo de Transformação</label>
                                         <select class="form-select form-select-sm" id="transformType">
-                                            <option value="translation">Translação</option>
+                                            <option value="translation" selected>Translação</option>
                                             <option value="rotation">Rotação</option>
                                             <option value="scale">Escala</option>
                                         </select>
                                     </div>
-                                    <div class="mb-2">
-                                        <label class="form-label">Parâmetros</label>
+                        
+                                    <div id="translationInputs" class="transform-inputs">
+                                        <label class="form-label">Vetor de Translação (dx, dy)</label>
                                         <div class="row g-2">
                                             <div class="col-6">
-                                                <input type="number" class="form-control form-control-sm" id="transformParam1" value="10" placeholder="dx/ângulo/sx">
+                                                <input type="number" class="form-control form-control-sm" id="translateX" value="5" title="Deslocamento em X">
                                             </div>
                                             <div class="col-6">
-                                                <input type="number" class="form-control form-control-sm" id="transformParam2" value="10" placeholder="dy/centro/sy">
+                                                <input type="number" class="form-control form-control-sm" id="translateY" value="5" title="Deslocamento em Y">
                                             </div>
                                         </div>
                                     </div>
-                                    <button class="btn btn-primary btn-sm w-100" id="applyTransform">
-                                        <i class="bi bi-arrow-clockwise"></i> Aplicar
-                                    </button>
+                        
+                                    <div id="rotationInputs" class="transform-inputs" style="display: none;">
+                                        <label class="form-label">Ângulo (em graus)</label>
+                                        <input type="number" class="form-control form-control-sm mb-2" id="rotationAngle" value="45" title="Ângulo de rotação">
+                                        
+                                        <label class="form-label">Ponto de Pivô (px, py)</label>
+                                        <div class="row g-2">
+                                            <div class="col-6">
+                                                <input type="number" class="form-control form-control-sm" id="rotationPivotX" value="0" title="Coordenada X do pivô">
+                                            </div>
+                                            <div class="col-6">
+                                                <input type="number" class="form-control form-control-sm" id="rotationPivotY" value="0" title="Coordenada Y do pivô">
+                                            </div>
+                                        </div>
+                                        <small class="text-muted d-block mt-1">Girar em torno da origem (0,0) ou de um ponto.</small>
+                                    </div>
+                        
+                                    <div id="scaleInputs" class="transform-inputs" style="display: none;">
+                                        <label class="form-label">Fatores de Escala (sx, sy)</label>
+                                        <div class="row g-2 mb-2">
+                                            <div class="col-6">
+                                                <input type="number" class="form-control form-control-sm" id="scaleX" value="1.5" step="0.1" title="Fator de escala em X">
+                                            </div>
+                                            <div class="col-6">
+                                                <input type="number" class="form-control form-control-sm" id="scaleY" value="1.5" step="0.1" title="Fator de escala em Y">
+                                            </div>
+                                        </div>
+                        
+                                        <label class="form-label">Ponto Fixo (cx, cy)</label>
+                                        <div class="row g-2">
+                                            <div class="col-6">
+                                                <input type="number" class="form-control form-control-sm" id="scaleCenterX" value="0" title="Coordenada X do ponto fixo">
+                                            </div>
+                                            <div class="col-6">
+                                                <input type="number" class="form-control form-control-sm" id="scaleCenterY" value="0" title="Coordenada Y do ponto fixo">
+                                            </div>
+                                        </div>
+                                        <small class="text-muted d-block mt-1">Aumentar/diminuir a partir da origem (0,0) ou de um ponto.</small>
+                                    </div>
+                        
+                                    <div class="d-grid mt-3">
+                                        <button class="btn btn-primary btn-sm" id="applyTransform">
+                                            <i class="bi bi-check-lg"></i> Aplicar ao Último Desenho
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
