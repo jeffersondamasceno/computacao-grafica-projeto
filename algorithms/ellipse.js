@@ -10,8 +10,9 @@
  * @param {number} centerY - Coordenada Y do centro.
  * @param {number} radiusX - O raio no eixo X (semi-eixo maior).
  * @param {number} radiusY - O raio no eixo Y (semi-eixo menor).
+ * @param {string} color - A cor para desenhar a elipse.
  */
-export function midpointEllipse(graphics, centerX, centerY, radiusX, radiusY) {
+export function midpointEllipse(graphics, centerX, centerY, radiusX, radiusY, color) {
     let rx2 = radiusX * radiusX;
     let ry2 = radiusY * radiusY;
     let twoRx2 = 2 * rx2;
@@ -24,11 +25,14 @@ export function midpointEllipse(graphics, centerX, centerY, radiusX, radiusY) {
 
     // Função auxiliar para desenhar os 4 pontos simétricos
     const drawEllipsePoints = (x, y) => {
-        graphics.drawPixel(centerX + x, centerY + y);
-        graphics.drawPixel(centerX - x, centerY + y);
-        graphics.drawPixel(centerX + x, centerY - y);
-        graphics.drawPixel(centerX - x, centerY - y);
+        graphics.drawPixel(centerX + x, centerY + y, color);
+        graphics.drawPixel(centerX - x, centerY + y, color);
+        graphics.drawPixel(centerX + x, centerY - y, color);
+        graphics.drawPixel(centerX - x, centerY - y, color);
     };
+
+    // --- Desenha os pontos iniciais nos eixos ---
+    drawEllipsePoints(x, y);
 
     // --- Região 1 ---
     // Começa em (0, ry) e vai até o ponto onde a inclinação da curva é -1.

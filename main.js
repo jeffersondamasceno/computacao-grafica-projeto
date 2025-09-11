@@ -257,6 +257,8 @@ class GraphicsCanvas {
             bresenhamLine(this, drawing.x1, drawing.y1, drawing.x2, drawing.y2, drawing.color);
         } else if (drawing.type === 'circle') {
             midpointCircle(this, drawing.centerX, drawing.centerY, drawing.radius, drawing.color);
+        } else if (drawing.type === 'ellipse') { // <-- ADICIONADO ESTE BLOCO
+            midpointEllipse(this, drawing.centerX, drawing.centerY, drawing.radiusX, drawing.radiusY, drawing.color);
         } else if (drawing.type === 'polyline') {
             Polyline.drawPolyline(this, drawing.points, drawing.color);
         } else if (drawing.type === 'polygon') {
@@ -615,7 +617,7 @@ class GraphicsCanvas {
             const radiusY = Math.abs(gridCoords.y - center.y);
             
             this.saveDrawing({ type: 'ellipse', centerX: center.x, centerY: center.y, radiusX, radiusY, color: this.drawColor });
-            midpointEllipse(this, center.x, center.y, radiusX, radiusY, this.drawColor);
+            midpointEllipse(this, center.x, center.y, radiusX, radiusY, this.drawColor); // Passa a cor
             this.resetDrawingState();
         }
         // Lógica para o desenho interativo da polilinha
@@ -968,7 +970,18 @@ class GraphicsCanvas {
         const centerY = parseInt(document.getElementById('ellipseY').value);
         const radiusX = parseInt(document.getElementById('ellipseA').value);
         const radiusY = parseInt(document.getElementById('ellipseB').value);
-        midpointEllipse(this, centerX, centerY, radiusX, radiusY);
+        
+        // Guarda o desenho antes de o executar
+        this.saveDrawing({ 
+            type: 'ellipse', 
+            centerX: centerX, 
+            centerY: centerY, 
+            radiusX: radiusX, 
+            radiusY: radiusY, 
+            color: this.drawColor 
+        });
+
+        midpointEllipse(this, centerX, centerY, radiusX, radiusY, this.drawColor); // Passa a cor
     }
 
     startInteractiveEllipseDraw() {
