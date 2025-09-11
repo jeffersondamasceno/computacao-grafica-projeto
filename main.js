@@ -257,8 +257,10 @@ class GraphicsCanvas {
             bresenhamLine(this, drawing.x1, drawing.y1, drawing.x2, drawing.y2, drawing.color);
         } else if (drawing.type === 'circle') {
             midpointCircle(this, drawing.centerX, drawing.centerY, drawing.radius, drawing.color);
-        } else if (drawing.type === 'ellipse') { // <-- ADICIONADO ESTE BLOCO
+        } else if (drawing.type === 'ellipse') {
             midpointEllipse(this, drawing.centerX, drawing.centerY, drawing.radiusX, drawing.radiusY, drawing.color);
+        } else if (drawing.type === 'bezier') {
+            drawBezierCurve(this, drawing.p0, drawing.p1, drawing.p2, drawing.color);
         } else if (drawing.type === 'polyline') {
             Polyline.drawPolyline(this, drawing.points, drawing.color);
         } else if (drawing.type === 'polygon') {
@@ -998,7 +1000,17 @@ class GraphicsCanvas {
         const p0 = { x: parseInt(document.getElementById('bezierP0x').value), y: parseInt(document.getElementById('bezierP0y').value) };
         const p1 = { x: parseInt(document.getElementById('bezierP1x').value), y: parseInt(document.getElementById('bezierP1y').value) };
         const p2 = { x: parseInt(document.getElementById('bezierP2x').value), y: parseInt(document.getElementById('bezierP2y').value) };
-        drawBezierCurve(this, p0, p1, p2);
+        
+        // Guarda o desenho antes de o executar
+        this.saveDrawing({
+            type: 'bezier',
+            p0: p0,
+            p1: p1,
+            p2: p2,
+            color: this.drawColor
+        });
+        
+        drawBezierCurve(this, p0, p1, p2, this.drawColor);
     }
 
     /** Aciona o algoritmo de Polilinha com os valores dos inputs. */

@@ -40,8 +40,9 @@ function deCasteljau(p0, p1, p2, t) {
  * @param {{x: number, y: number}} p0 - Ponto de controle 0.
  * @param {{x: number, y: number}} p1 - Ponto de controle 1.
  * @param {{x: number, y: number}} p2 - Ponto de controle 2.
+ * @param {string} color - A cor para desenhar a curva.
  */
-export function drawBezierCurve(graphics, p0, p1, p2) {
+export function drawBezierCurve(graphics, p0, p1, p2, color) {
     const points = [];
     const step = 0.01; // Define a precisão da curva. Menor = mais suave.
 
@@ -59,7 +60,7 @@ export function drawBezierCurve(graphics, p0, p1, p2) {
 
         // Evita desenhar segmentos de tamanho zero.
         if (startPoint.x !== endPoint.x || startPoint.y !== endPoint.y) {
-            bresenhamLine(graphics, startPoint.x, startPoint.y, endPoint.x, endPoint.y);
+            bresenhamLine(graphics, startPoint.x, startPoint.y, endPoint.x, endPoint.y, color);
         }
     }
 }
