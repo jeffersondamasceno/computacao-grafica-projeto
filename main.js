@@ -234,7 +234,6 @@ class GraphicsCanvas {
         this.zoomStep = 0.1;
         this.baseGridSize = 20;
         this.drawColor = '#ff0000';
-        this.lineWidth = 1;
         this.drawingState = { mode: null, points: [] };
         this.savedDrawings = [];
         this.lastPolygon = null;
@@ -289,7 +288,6 @@ class GraphicsCanvas {
 
         // Configurações
         document.getElementById('drawColor').addEventListener('change', (e) => { this.drawColor = e.target.value; });
-        document.getElementById('lineWidth').addEventListener('input', (e) => { this.lineWidth = parseInt(e.target.value); });
         document.getElementById('gridWidth').addEventListener('input', (e) => {
             document.getElementById('gridWidthValue').textContent = e.target.value;
             this.previewGridSize();
@@ -533,7 +531,7 @@ class GraphicsCanvas {
         } else if (this.drawingState.mode === 'line_end') {
             if (!this.validateCoordinates(gridCoords.x, gridCoords.y)) { this.updateCoordinatesDisplay('Erro: Ponto final fora dos limites!'); return; }
             const startPoint = this.drawingState.points[0];
-            this.saveDrawing({ type: 'line', x1: startPoint.x, y1: startPoint.y, x2: gridCoords.x, y2: gridCoords.y, color: this.drawColor, lineWidth: this.lineWidth });
+            this.saveDrawing({ type: 'line', x1: startPoint.x, y1: startPoint.y, x2: gridCoords.x, y2: gridCoords.y, color: this.drawColor });
             bresenhamLine(this, startPoint.x, startPoint.y, gridCoords.x, gridCoords.y, this.drawColor);
             this.resetDrawingState();
         } else if (this.drawingState.mode === 'circle_center') {
@@ -544,7 +542,7 @@ class GraphicsCanvas {
         } else if (this.drawingState.mode === 'circle_radius') {
             const center = this.drawingState.points[0];
             const radius = Math.round(Math.sqrt(Math.pow(gridCoords.x - center.x, 2) + Math.pow(gridCoords.y - center.y, 2)));
-            this.saveDrawing({ type: 'circle', centerX: center.x, centerY: center.y, radius: radius, color: this.drawColor, lineWidth: this.lineWidth });
+            this.saveDrawing({ type: 'circle', centerX: center.x, centerY: center.y, radius: radius, color: this.drawColor });
             midpointCircle(this, center.x, center.y, radius, this.drawColor);
             this.resetDrawingState();
         } else if (this.drawingState.mode === 'ellipse_center') {
@@ -584,7 +582,7 @@ class GraphicsCanvas {
         e.preventDefault();
         if (this.drawingState.mode === 'polyline_draw' && this.drawingState.points.length >= 2) {
             const finalPoints = [...this.drawingState.points];
-            const drawingData = { type: 'polygon', points: finalPoints, color: this.drawColor, lineWidth: this.lineWidth };
+            const drawingData = { type: 'polygon', points: finalPoints, color: this.drawColor };
             this.saveDrawing(drawingData);
             this.lastPolygon = drawingData;
             this.redrawCanvas();
@@ -666,7 +664,7 @@ class GraphicsCanvas {
         this.resetDrawingState();
         const [x1, y1, x2, y2] = ['x1', 'y1', 'x2', 'y2'].map(id => parseInt(document.getElementById(id).value));
         if (!this.validateCoordinates(x1, y1) || !this.validateCoordinates(x2, y2)) { this.updateCoordinatesDisplay('Erro: Coordenadas fora dos limites!'); return; }
-        this.saveDrawing({ type: 'line', x1, y1, x2, y2, color: this.drawColor, lineWidth: this.lineWidth });
+        this.saveDrawing({ type: 'line', x1, y1, x2, y2, color: this.drawColor });
         bresenhamLine(this, x1, y1, x2, y2, this.drawColor);
     }
     startInteractiveLineDraw() {
@@ -680,7 +678,7 @@ class GraphicsCanvas {
         const centerY = parseInt(document.getElementById('circleY').value);
         const radius = parseInt(document.getElementById('circleRadius').value);
         if (!this.validateCoordinates(centerX, centerY)) { this.updateCoordinatesDisplay('Erro: Centro fora dos limites!'); return; }
-        this.saveDrawing({ type: 'circle', centerX, centerY, radius, color: this.drawColor, lineWidth: this.lineWidth });
+        this.saveDrawing({ type: 'circle', centerX, centerY, radius, color: this.drawColor });
         midpointCircle(this, centerX, centerY, radius, this.drawColor);
     }
     startInteractiveCircleDraw() {
@@ -722,7 +720,7 @@ class GraphicsCanvas {
             if (isNaN(x) || isNaN(y) || !this.validateCoordinates(x, y)) { this.updateCoordinatesDisplay(`Erro: Ponto (${x},${y}) inválido.`); return; }
             polylinePoints.push({ x, y });
         }
-        const drawingData = { type: 'polygon', points: polylinePoints, color: this.drawColor, lineWidth: this.lineWidth };
+        const drawingData = { type: 'polygon', points: polylinePoints, color: this.drawColor };
         this.saveDrawing(drawingData);
         this.lastPolygon = drawingData;
         Polyline.drawPolygon(this, polylinePoints, this.drawColor);
