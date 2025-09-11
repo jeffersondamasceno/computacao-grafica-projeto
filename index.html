@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Computação Gráfica - Protótipo Interativo</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -366,28 +367,9 @@
                             </h2>
                             <div id="projectionCollapse" class="accordion-collapse collapse" data-bs-parent="#algorithmsAccordion">
                                 <div class="accordion-body">
-                                    <div class="mb-2">
-                                        <label class="form-label">Tipo de Projeção</label>
-                                        <select class="form-select form-select-sm" id="projectionType">
-                                            <option value="orthographic">Ortogonal</option>
-                                            <option value="perspective">Perspectiva</option>
-                                            <option value="cavalier">Cavalier</option>
-                                            <option value="cabinet">Cabinet</option>
-                                        </select>
-                                    </div>
-                                    <div class="mb-2">
-                                        <label class="form-label">Ângulos (graus)</label>
-                                        <div class="row g-2">
-                                            <div class="col-6">
-                                                <input type="number" class="form-control form-control-sm" id="projectionAngle1" value="30" placeholder="θ">
-                                            </div>
-                                            <div class="col-6">
-                                                <input type="number" class="form-control form-control-sm" id="projectionAngle2" value="45" placeholder="φ">
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <button class="btn btn-primary btn-sm w-100" id="applyProjection">
-                                        <i class="bi bi-box"></i> Aplicar Projeção
+                                    <p class="text-muted small">Clique no botão abaixo para definir um objeto 3D e projetá-lo no plano 2D.</p>
+                                    <button class="btn btn-primary btn-sm w-100" id="openProjectionModal">
+                                        <i class="bi bi-box"></i> Abrir Editor de Projeção
                                     </button>
                                 </div>
                             </div>
@@ -400,13 +382,13 @@
                         <div class="mb-3">
                             <h6 class="text-primary">Tamanho da Grade</h6>
                             <div class="mb-2">
-                                <label class="form-label">Largura (X): <span id="gridWidthValue">20</span></label>
-                                <input type="range" class="form-range" id="gridWidth" min="10" max="100" value="20">
+                                <label class="form-label">Largura (X): <span id="gridWidthValue">40</span></label>
+                                <input type="range" class="form-range" id="gridWidth" min="10" max="100" value="40">
                                 <small class="text-muted">10 - 100 unidades</small>
                             </div>
                             <div class="mb-2">
-                                <label class="form-label">Altura (Y): <span id="gridHeightValue">15</span></label>
-                                <input type="range" class="form-range" id="gridHeight" min="10" max="100" value="15">
+                                <label class="form-label">Altura (Y): <span id="gridHeightValue">30</span></label>
+                                <input type="range" class="form-range" id="gridHeight" min="10" max="100" value="30">
                                 <small class="text-muted">10 - 100 unidades</small>
                             </div>
                             <button class="btn btn-outline-primary btn-sm w-100" id="applyGridSize">
@@ -438,7 +420,7 @@
                     </div>
                     <div class="canvas-overlay">
                         <div class="coordinates-display" id="coordinatesDisplay">
-                            Coordenadas: (0, 0)
+                            Passe o mouse sobre o canvas para ver as coordenadas.
                         </div>
                     </div>
                 </div>
@@ -446,11 +428,112 @@
         </div>
     </div>
 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <div class="modal fade" id="projectionModal" tabindex="-1" aria-labelledby="projectionModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="projectionModalLabel"><i class="bi bi-box"></i> Editor de Projeção 3D</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-lg-4">
+                            <h6><i class="bi bi-pencil-square"></i> 1. Defina os Vértices 3D</h6>
+                            <p class="text-muted small">Insira os pontos (x, y, z) do seu objeto, um por linha. Exemplo: <code>5,5,5</code></p>
+                            <textarea id="3dPointsInput" class="form-control" rows="8">
+5,5,5
+-5,5,5
+-5,-5,5
+5,-5,5
+5,5,-5
+-5,5,-5
+-5,-5,-5
+5,-5,-5
+                            </textarea>
+                            <h6 class="mt-3"><i class="bi bi-diagram-3"></i> 2. Defina as Arestas</h6>
+                            <p class="text-muted small">Conecte os vértices (índice inicial 0). Ex: <code>0,1</code></p>
+                            <textarea id="3dEdgesInput" class="form-control" rows="8">
+0,1
+1,2
+2,3
+3,0
+4,5
+5,6
+6,7
+7,4
+0,4
+1,5
+2,6
+3,7
+                            </textarea>
+                            <button class="btn btn-secondary btn-sm mt-2 w-100" id="update3DObject">
+                                <i class="bi bi-arrow-clockwise"></i> Atualizar Objeto 3D
+                            </button>
+                        </div>
+                        <div class="col-lg-8">
+                            <h6><i class="bi bi-eye"></i> Visualização 3D</h6>
+                            <div id="3d-viewer" class="border rounded bg-light"></div>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row align-items-end">
+                        <div class="col-lg-8">
+                            <h6><i class="bi bi-rulers"></i> 3. Selecione a Projeção</h6>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label for="projectionType" class="form-label">Tipo de Projeção</label>
+                                    <select class="form-select form-select-sm" id="projectionType">
+                                        <option value="orthographic" selected>Ortogonal</option>
+                                        <option value="perspective">Perspectiva</option>
+                                        <option value="cavalier">Cavalier</option>
+                                        <option value="cabinet">Cabinet</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-8">
+                                    <div id="orthographic-perspective-inputs">
+                                        <label class="form-label">Ângulos de Rotação (Graus)</label>
+                                        <div class="row g-2">
+                                            <div class="col-6">
+                                                <input type="number" class="form-control form-control-sm" id="projectionTheta" value="30" title="Rotação em Y (θ)">
+                                            </div>
+                                            <div class="col-6">
+                                                <input type="number" class="form-control form-control-sm" id="projectionPhi" value="45" title="Rotação em X (φ)">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="oblique-inputs" style="display: none;">
+                                        <label class="form-label">Ângulo de Projeção (Graus)</label>
+                                        <input type="number" class="form-control form-control-sm" id="projectionAlpha" value="45" title="Ângulo α">
+                                    </div>
+                                    <div id="perspective-d-input" style="display: none;">
+                                        <label class="form-label">Distância do Observador (d)</label>
+                                        <input type="number" class="form-control form-control-sm" id="projectionD" value="20" title="Distância d">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                             <button class="btn btn-primary w-100" id="applyProjection">
+                                <i class="bi bi-check-lg"></i> Aplicar Projeção no Canvas 2D
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     
+    <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.150.1/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.150.1/examples/jsm/"
+        }
+    }
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <script src="main.js" type="module"></script>    
+    <script src="main.js" type="module"></script>
 
 </body>
 </html>
