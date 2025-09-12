@@ -327,8 +327,6 @@ class GraphicsCanvas {
         });
     }
     
-    // ... (O restante dos métodos da classe GraphicsCanvas permanece o mesmo) ...
-    
     setupScrollSystem() {
         this.scrollContainer = document.getElementById('canvasScrollContainer');
         this.scrollContainer.addEventListener('scroll', () => {
