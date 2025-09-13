@@ -42,9 +42,7 @@ A abordagem recomendada é o desenvolvimento Web, utilizando:
 
 ## 🚀 Como Executar
 
-1. Clone este repositório.
-2. Abra o arquivo `index.html` em um navegador web moderno (Chrome, Firefox, Edge).
-3. Nenhuma instalação adicional é necessária.
+Descrição detalhada no README_EXECUTAR
 
 ## 📂 Estrutura do Projeto
 
